@@ -77,11 +77,14 @@ main:
   jsr ENABLE_MOTOR      ;enable motor operation
 
   TOP:
-    bgnd
-    ldd #$0139 ; load accumulator D with 313
-    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    bgnd
 
+    ldd #$0000 ; load accumulator D with 313
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
+    bra TOP               ;go back to TOP and loop through endlessly
+    
+    
     ldd #$FEC7 ; load accumulator D with -313
     jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
     bgnd
@@ -90,101 +93,21 @@ main:
     jsr UPDATE_MOTOR ; brake the motor at 100% dut
     bgnd
     
-    bra TOP               ;go back to TOP and loop through endlessly
+    
   
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
 ;\------------------------------------------------------------------------------------/
-CONVERT:  ;converts input
-  pshb                           ; save B & Y 
-  pshy 
-  des                            ; make room for three bytes on the stack 
-  des                            ;   [first byte serves as a counter] 
-  des                            ;   [last two bytes serve as RESULT] 
-  clr   0,SP                     ; zero these three bytes on the stack 
-  clrw  1,SP 
-  ldx   #BUFFER 
- 
-  conv_loop: 
-    ldaa  0,SP 
-    ldab  A,X 
-    subb  #'0' 
-    clra       
-    addd  1,SP
-    cpd   #$FF
-    bge   TOO_LARGE 
-    std   1,SP 
-    inc   0,SP 
-    dec   COUNT 
-    beq   conv_done 
-    ldy   #$000A 
-    emul 
-    cpy   #$0000 
-    bne   TOO_LARGE 
-    std   1,SP 
-    bra   conv_loop 
-  conv_done: 
-    cpd   #$0000 
-    beq   ZERO_MAG 
-    tfr   D,X 
-    clra 
-    bra   exit_conversion 
-  TOO_LARGE: 
-    ldaa  #$01 
-    bra   exit_conversion 
-  ZERO_MAG: 
-    ldaa  #$02 
-  exit_conversion: 
-    ins                            ; remove three bytes from stack 
-    ins 
-    ins 
-    puly                           ; restore B & Y 
-    pulb 
-    rts                            ; end subroutine ASCII_2_Bin 
-
-TC0ISR: ;function generator code               
-  dec   CINT                    ;BTI completion check
-  bne   NOT_YET
-  ldd   VALUE                   ;get updated DAC_A input
-  jsr   OUTDACA                 ;update DAC_A output
-  movb  NINT,CINT               ;reinitialize interupt counter for new BTI
-  movb  #$01,NEWBTI             ;set flag indicating beginning of a new BTI
-  
-  NOT_YET:  ;reset timer for next interupt
-    ldd   TC0H                  ;loads TC0H into acc. D
-    addd  #INTERVAL             ;adds INTERVAL to D
-    std   TC0H                  ;stores D into TC0H (THIS IS THE NEW TIME SET)
-    bset  TFLG1, C0F_CLEAR      ;sets TFLG1 to C0F_CLEAR
-    tst ERRORCOUNT
-    bne ECDEC
-    rti                         ;returns to interupt
-    
-    ECDEC:
-      dec ERRORCOUNT
-      rti
-    
+   
 
 ;/------------------------------------------------------------------------------------\
 ;| ASCII Messages and Constant Data                                                   |
 ;\------------------------------------------------------------------------------------/
-;MESSAGES
-L1:       DC.B ' (1)SAW  (2)7SINE  (3)SQUARE  (4)15SINE ',$00 
-L2SAW:    DC.B 'WAVE: SAW            NINT:     [1-->255]',$00
-L27SINE:  DC.B 'WAVE: 7SINE          NINT:     [1-->255]',$00
-L2SQUARE: DC.B 'WAVE: SQUARE         NINT:     [1-->255]',$00
-L215SINE: DC.B 'WAVE: 15SINE         NINT:     [1-->255]',$00
-LARGE:    DC.B 'MAGNITUDE TOO LARGE',$00
-ZERO:     DC.B '  INVALID MAGNITUDE',$00
-NADA:     DC.B '  NO DIGITS ENTERED',$00
-L2CLEAR:  DC.B '                                        ',$00 
-
 
 ;/------------------------------------------------------------------------------------\
 ;| Vectors                                                                            |
 ;\------------------------------------------------------------------------------------/
-  ORG   $FFEE                      ;Timer channel 0 vector address
-  DC.W  TC0ISR
   ORG   $FFFE                    ; reset vector address
   DC.W  Entry
   ORG   $FFCE                    ; Key Wakeup interrupt vector address [Port J]
