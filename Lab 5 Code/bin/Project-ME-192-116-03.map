@@ -1,0 +1,796 @@
+
+PROGRAM "C:\Users\nburtnet\OneDrive - Cal Poly\Fall 2022\Intro to Mechatronics\Labs\Lab 3\Lab 3 Code\blank_project\bin\Project.abs"
+
+*********************************************************************************************
+TARGET SECTION
+---------------------------------------------------------------------------------------------
+Processor   : Freescale HC12
+Memory Model: SMALL
+File Format : ELF\DWARF 2.0
+Linker      : SmartLinker V-5.0.40 Build 10203, Jul 23 2010
+
+*********************************************************************************************
+FILE SECTION
+---------------------------------------------------------------------------------------------
+main.asm.o                              Model: SMALL,         Lang: Assembler
+Lib_Delay.asm.o (ME305LIBV2.2.lib)      Model: SMALL,         Lang: Assembler
+Lib_Encoder.asm.o (ME305LIBV2.2.lib)    Model: SMALL,         Lang: Assembler
+Lib_Keypad.asm.o (ME305LIBV2.2.lib)     Model: SMALL,         Lang: Assembler
+Lib_LCD.asm.o (ME305LIBV2.2.lib)        Model: SMALL,         Lang: Assembler
+Lib_Startup.asm.o (ME305LIBV2.2.lib)    Model: SMALL,         Lang: Assembler
+
+*********************************************************************************************
+STARTUP SECTION
+---------------------------------------------------------------------------------------------
+Entry point: 0xC000 (Entry)
+
+*********************************************************************************************
+SECTION-ALLOCATION SECTION
+Section Name                    Size  Type     From       To       Segment
+---------------------------------------------------------------------------------------------
+.init                            227     R     0xC000     0xC0E2   ROM_C000
+.stack                          1024   R/W     0x2000     0x23FF   RAM
+.data                             42   R/W     0x2400     0x2429   RAM
+LIBRARY_RAM                       35   R/W     0x1000     0x1022   LIBRAM
+MyCode                          1776     R     0x4000     0x46EF   ROM_4000
+Lib_Keypad                       117     R      0x800      0x874   EEPROM
+Lib_Encoder                      177     R      0x875      0x925   EEPROM
+Lib_LCD                          578     R      0x926      0xB67   EEPROM
+Lib_Delay                         56     R      0xB68      0xB9F   EEPROM
+main.asm__ORG00001                 2     R     0xFFFE     0xFFFF   .absSeg0
+main.asm__ORG00002                 2     R     0xFFCE     0xFFCF   .absSeg1
+
+Summary of section sizes per section type:
+READ_ONLY (R):         B77 (dec:     2935)
+READ_WRITE (R/W):      44D (dec:     1101)
+
+*********************************************************************************************
+VECTOR-ALLOCATION SECTION
+    Address     InitValue   InitFunction
+---------------------------------------------------------------------------------------------
+
+*********************************************************************************************
+OBJECT-ALLOCATION SECTION
+     Name               Module                 Addr   hSize   dSize     Ref    Section   RLIB
+---------------------------------------------------------------------------------------------
+MODULE:                 -- main.asm.o --
+- PROCEDURES:
+     main                                      4000      59      89       1   MyCode      
+     Top                                       4059      1A      26       0   MyCode      
+     TASK_1                                    4073      25      37       1   MyCode      
+     t1state0                                  4098       6       6       0   MyCode      
+     t1state1                                  409E      2C      44       0   MyCode      
+     t1_bs                                     40CA       6       6       0   MyCode      
+     t1_ent                                    40D0       6       6       0   MyCode      
+     t1_f1                                     40D6       6       6       0   MyCode      
+     t1_f2                                     40DC       6       6       0   MyCode      
+     t1_dh                                     40E2       6       6       0   MyCode      
+     t1state2                                  40E8      24      36       0   MyCode      
+     t1state3                                  410C      25      37       0   MyCode      
+     t1state4                                  4131      14      20       0   MyCode      
+     f1clr                                     4145      21      33       0   MyCode      
+     t1state5                                  4166      14      20       0   MyCode      
+     f2clr                                     417A      1C      28       0   MyCode      
+     t1state6                                  4196      16      22       0   MyCode      
+     ent1                                      41AC      15      21       0   MyCode      
+     ent2                                      41C1      15      21       0   MyCode      
+     e1l1                                      41D6       A      10       0   MyCode      
+     e2l1                                      41E0       A      10       0   MyCode      
+     e1l2                                      41EA       A      10       0   MyCode      
+     e2l2                                      41F4       A      10       0   MyCode      
+     e_exit                                    41FE       B      11       0   MyCode      
+     exit_t1                                   4209       6       6       0   MyCode      
+     TASK_2                                    420F       C      12       1   MyCode      
+     t2state0                                  421B       9       9       0   MyCode      
+     t2state1                                  4224       B      11       0   MyCode      
+     t2state2                                  422F      15      21       0   MyCode      
+     exit_t2                                   4244       1       1       0   MyCode      
+     TASK_3                                    4245      2B      43       1   MyCode      
+     t3state0                                  4270       B      11       0   MyCode      
+     loop1                                     427B      10      16       0   MyCode      
+     loop2                                     428B      10      16       0   MyCode      
+     loop3                                     429B      10      16       0   MyCode      
+     loop4                                     42AB       E      14       0   MyCode      
+     t3state1                                  42B9      21      33       0   MyCode      
+     t3echo                                    42DA       6       6       0   MyCode      
+     t3bs                                      42E0       6       6       0   MyCode      
+     t3e1l1                                    42E6       6       6       0   MyCode      
+     t3e2l1                                    42EC       6       6       0   MyCode      
+     t3e1l2                                    42F2       6       6       0   MyCode      
+     t3e2l2                                    42F8       6       6       0   MyCode      
+     t3state2                                  42FE      10      16       0   MyCode      
+     echo1                                     430E      16      22       0   MyCode      
+     echo2                                     4324      16      22       0   MyCode      
+     t3state3                                  433A      10      16       0   MyCode      
+     bs1                                       434A      15      21       0   MyCode      
+     bs2                                       435F      15      21       0   MyCode      
+     t3state4                                  4374       9       9       0   MyCode      
+     t3e1l1p                                   437D       8       8       0   MyCode      
+     e1loop1                                   4385       E      14       0   MyCode      
+     t3e2l1p                                   4393       8       8       0   MyCode      
+     e1loop2                                   439B       E      14       0   MyCode      
+     t3state5                                  43A9       9       9       0   MyCode      
+     t3e1l2p                                   43B2       8       8       0   MyCode      
+     e2loop1                                   43BA       E      14       0   MyCode      
+     t3e2l2p                                   43C8       8       8       0   MyCode      
+     e2loop2                                   43D0       E      14       0   MyCode      
+     t3state6                                  43DE       C      12       0   MyCode      
+     t3state7                                  43EA      10      16       0   MyCode      
+     exit_t3                                   43FA       7       7       0   MyCode      
+     exit_t3_l1                                4401       8       8       0   MyCode      
+     e1loop6                                   4409      14      20       0   MyCode      
+     exit_t3_l2                                441D       8       8       0   MyCode      
+     e1loop7                                   4425      14      20       0   MyCode      
+     TASK_4                                    4439      1F      31       1   MyCode      
+     t4state0                                  4458       E      14       0   MyCode      
+     t4state1                                  4466       E      14       0   MyCode      
+     exit_t4s1                                 4474       1       1       0   MyCode      
+     t4state2                                  4475       E      14       0   MyCode      
+     exit_t4s2                                 4483       1       1       0   MyCode      
+     t4state3                                  4484       E      14       0   MyCode      
+     exit_t4s3                                 4492       1       1       0   MyCode      
+     t4state4                                  4493       E      14       0   MyCode      
+     exit_t4s4                                 44A1       1       1       0   MyCode      
+     t4state5                                  44A2       E      14       0   MyCode      
+     exit_t4s5                                 44B0       1       1       0   MyCode      
+     t4state6                                  44B1       E      14       0   MyCode      
+     exit_t4s6                                 44BF       1       1       0   MyCode      
+     notready1                                 44C0      11      17       0   MyCode      
+     TASK_5                                    44D1       9       9       1   MyCode      
+     t5state0                                  44DA       F      15       0   MyCode      
+     t5state1                                  44E9       9       9       0   MyCode      
+     t5s1a                                     44F2       7       7       0   MyCode      
+     COUNT_1_DONE                              44F9       C      12       0   MyCode      
+     exit_t5s2                                 4505       4       4       0   MyCode      
+     TASK_6                                    4509      1F      31       1   MyCode      
+     t6state0                                  4528       E      14       0   MyCode      
+     t6state1                                  4536       E      14       0   MyCode      
+     exit_t6s1                                 4544       1       1       0   MyCode      
+     t6state2                                  4545       E      14       0   MyCode      
+     exit_t6s2                                 4553       1       1       0   MyCode      
+     t6state3                                  4554       E      14       0   MyCode      
+     exit_t6s3                                 4562       1       1       0   MyCode      
+     t6state4                                  4563       E      14       0   MyCode      
+     exit_t6s4                                 4571       1       1       0   MyCode      
+     t6state5                                  4572       E      14       0   MyCode      
+     exit_t6s5                                 4580       1       1       0   MyCode      
+     t6state6                                  4581       E      14       0   MyCode      
+     exit_t6s6                                 458F       1       1       0   MyCode      
+     notready2                                 4590      11      17       0   MyCode      
+     TASK_7                                    45A1       9       9       1   MyCode      
+     t7state0                                  45AA       F      15       0   MyCode      
+     t7state1                                  45B9       9       9       0   MyCode      
+     t7s1a                                     45C2       7       7       0   MyCode      
+     COUNT_2_DONE                              45C9       C      12       0   MyCode      
+     exit_t7s2                                 45D5       4       4       0   MyCode      
+     TASK_8                                    45D9       9       9       1   MyCode      
+     t8state0                                  45E2       6       6       0   MyCode      
+     t8state1                                  45E8       4       4       0   MyCode      
+     DELAY_1ms                                 45EC       3       3       1   MyCode      
+     INNER                                     45EF       8       8       0   MyCode      
+     EXIT                                      45F7       1       1       0   MyCode      
+     PUTCHAR1ST                                45F8       A      10      12   MyCode      
+     PUTCHAR                                   4602       F      15      12   MyCode      
+     exit                                      4611       6       6       0   MyCode      
+     CONVERT                                   4617      10      16       2   MyCode      
+     conv_loop                                 4627      21      33       0   MyCode      
+     conv_done                                 4648       A      10       0   MyCode      
+     TOO_LARGE                                 4652       4       4       0   MyCode      
+     ZERO_MAG                                  4656       2       2       0   MyCode      
+     exit_conversion                           4658       9       9       0   MyCode      
+     T1                                        4661       8       8       1   MyCode      
+     T2                                        4669       8       8       1   MyCode      
+     F1                                        4671      1B      27       1   MyCode      
+     F2                                        468C      1B      27       1   MyCode      
+     LARGE                                     46A7      21      33       2   MyCode      
+     ZERO                                      46C8      21      33       2   MyCode      
+     BLANK                                     46E9       7       7       4   MyCode      
+- VARIABLES:
+     t1state                                   2400       1       1      14   .data       
+     t2state                                   2401       1       1       5   .data       
+     t3state                                   2402       1       1      20   .data       
+     t4state                                   2403       1       1       9   .data       
+     t5state                                   2404       1       1       3   .data       
+     t6state                                   2405       1       1       9   .data       
+     t7state                                   2406       1       1       3   .data       
+     t8state                                   2407       1       1       3   .data       
+     DONE_1                                    2408       1       1      10   .data       
+     DONE_2                                    2409       1       1      10   .data       
+     TICKS_1                                   240A       2       2       4   .data       
+     TICKS_2                                   240C       2       2       4   .data       
+     COUNT_1                                   240E       2       2       3   .data       
+     COUNT_2                                   2410       2       2       3   .data       
+     DPTR                                      2412       2       2       4   .data       
+     DECHO                                     2414       1       1       5   .data       
+     DBS                                       2415       1       1       5   .data       
+     DIGIT_COUNT                               2416       1       1       0   .data       
+     BUFFER                                    2417       5       5       4   .data       
+     BUFCLR                                    241C       1       1       0   .data       
+     KEY_FLG                                   241D       1       1       8   .data       
+     MOD                                       241E       1       1      12   .data       
+     COUNT                                     241F       1       1      13   .data       
+     KEY_BUF                                   2420       1       1      10   .data       
+     ERROR1                                    2421       1       1       7   .data       
+     ERROR2                                    2422       1       1       6   .data       
+     ERROR_TIME                                2423       2       2       2   .data       
+     TIMER_CD                                  2425       2       2       5   .data       
+     FIRSTCHAR                                 2427       1       1      15   .data       
+     PAIR1READY                                2428       1       1       6   .data       
+     PAIR2READY                                2429       1       1       6   .data       
+     VAR00001                                  FFFE       2       2       0   .text       
+     VAR00002                                  FFCE       2       2       0   .text       
+MODULE:                 -- Lib_Delay.asm.o (ME305LIBV2.2.lib) --
+- PROCEDURES:
+     DELAY_MICRO                                B68       F      15       5   Lib_Delay   
+     MICRO_Loop                                 B77       D      13       0   Lib_Delay   
+     DELAY_MILLI                                B84       F      15       2   Lib_Delay   
+     MILLI_Loop                                 B93       D      13       0   Lib_Delay   
+- VARIABLES:
+MODULE:                 -- Lib_Encoder.asm.o (ME305LIBV2.2.lib) --
+- PROCEDURES:
+     STARTUP_ENCODER                            875      51      81       0   Lib_Encoder 
+     READ_ENCODER                               8C6      37      55       0   Lib_Encoder 
+     DISABLE_ENCODER                            8FD      29      41       1   Lib_Encoder 
+- VARIABLES:
+MODULE:                 -- Lib_Keypad.asm.o (ME305LIBV2.2.lib) --
+- PROCEDURES:
+     INITKEY                                    800      35      53       1   Lib_Keypad  
+     GETCHAR                                    835      10      16       1   Lib_Keypad  
+     ISR_KEYPAD                                 845      1C      28       1   Lib_Keypad  
+     VAR00001                                   861      14      20       1   Lib_Keypad  
+- VARIABLES:
+     KEYREADY                                  1000       1       1       0   LIBRARY_RAM 
+     LCHARACTER                                1001       1       1       4   LIBRARY_RAM 
+     LKEY_FLG                                  1002       1       1       4   LIBRARY_RAM 
+MODULE:                 -- Lib_LCD.asm.o (ME305LIBV2.2.lib) --
+- PROCEDURES:
+     INITLCD                                    926      6F     111       1   Lib_LCD     
+     LCD_RESET                                  995      19      25       3   Lib_LCD     
+     LCD_WRITE                                  9AE      18      24       7   Lib_LCD     
+     BF_TEST                                    9C6      14      20       0   Lib_LCD     
+     LCD_READ                                   9DA      14      20       2   Lib_LCD     
+     DISP_OFF                                   9EE       8       8       1   Lib_LCD     
+     DISP_ON                                    9F6       8       8       1   Lib_LCD     
+     CURSOR_ON                                  9FE       8       8       1   Lib_LCD     
+     CURSOR_OFF                                 A06       1       1       0   Lib_LCD     
+     SETADDR                                    A07       E      14      16   Lib_LCD     
+     GETADDR                                    A15       C      12       3   Lib_LCD     
+     CLRSCREEN                                  A21      1C      28       3   Lib_LCD     
+     OUTCHAR_AT                                 A3D       3       3       4   Lib_LCD     
+     OUTCHAR                                    A40       C      12       3   Lib_LCD     
+     BS_HANDLE                                  A4C       C      12       0   Lib_LCD     
+     OUTSTRING_AT                               A58       3       3       0   Lib_LCD     
+     OUTSTRING                                  A5B       2       2      10   Lib_LCD     
+     OUTLOOP                                    A5D       9       9       0   Lib_LCD     
+     OUTEXIT                                    A66       3       3       0   Lib_LCD     
+     LCDTEMPLATE                                A69      1E      30       0   Lib_LCD     
+     UPDATELCD_L1                               A87      31      49       0   Lib_LCD     
+     UPDATELCD_L2                               AB8      1B      27       0   Lib_LCD     
+     INITMESS_L1                                AD3      27      39       1   Lib_LCD     
+     INITMESS_L2                                AFA      28      40       1   Lib_LCD     
+     LCDTEMPLATE_L1                             B22      29      41       1   Lib_LCD     
+     LCDTEMPLATE_L2                             B4B      1D      29       1   Lib_LCD     
+- VARIABLES:
+     LVREF_BUF                                 1003       4       4       2   LIBRARY_RAM 
+     LVREF_NULL                                1007       1       1       0   LIBRARY_RAM 
+     LVACT_BUF                                 1008       4       4       2   LIBRARY_RAM 
+     LVACT_NULL                                100C       1       1       0   LIBRARY_RAM 
+     LERR_BUF                                  100D       4       4       2   LIBRARY_RAM 
+     LERR_NULL                                 1011       1       1       0   LIBRARY_RAM 
+     LEFF_BUF                                  1012       4       4       2   LIBRARY_RAM 
+     LEFF_NULL                                 1016       1       1       0   LIBRARY_RAM 
+     LKP_BUF                                   1017       5       5       2   LIBRARY_RAM 
+     LKP_NULL                                  101C       1       1       0   LIBRARY_RAM 
+     LKI_BUF                                   101D       5       5       2   LIBRARY_RAM 
+     LKI_NULL                                  1022       1       1       0   LIBRARY_RAM 
+MODULE:                 -- Lib_Startup.asm.o (ME305LIBV2.2.lib) --
+- PROCEDURES:
+     _Startup                                  C000      13      19       0   .init       
+     Entry                                     C000       0       0       1   .init       
+     STARTUP_PLL                               C013      20      32       1   .init       
+     STARTUP_SPI0                              C033      45      69       1   .init       
+     STARTUP_ATD1                              C078      1A      26       0   .init       
+     STARTUP_PWM                               C092      1D      29       0   .init       
+     STARTUP_IO                                C0AF      34      52       1   .init       
+- VARIABLES:
+- LABELS:
+     __SEG_END_SSTACK                          2400       0       0       1               
+
+*********************************************************************************************
+MODULE STATISTIC
+  Name                                      Data   Code  Const
+---------------------------------------------------------------------------------------------
+  main.asm.o                                  42   1776      4
+  Lib_Delay.asm.o (ME305LIBV2.2.lib)           0     56      0
+  Lib_Encoder.asm.o (ME305LIBV2.2.lib)         0    177      0
+  Lib_Keypad.asm.o (ME305LIBV2.2.lib)          3    117      0
+  Lib_LCD.asm.o (ME305LIBV2.2.lib)            32    578      0
+  Lib_Startup.asm.o (ME305LIBV2.2.lib)         0    227      0
+  other                                     1024      0      0
+
+*********************************************************************************************
+SECTION USE IN OBJECT-ALLOCATION SECTION
+---------------------------------------------------------------------------------------------
+SECTION: ".text"
+  VAR00002 VAR00001 
+SECTION: ".data"
+  t1state t2state t3state t4state t5state t6state t7state t8state DONE_1 
+  DONE_2 TICKS_1 TICKS_2 COUNT_1 COUNT_2 DPTR DECHO DBS DIGIT_COUNT BUFFER 
+  BUFCLR KEY_FLG MOD COUNT KEY_BUF ERROR1 ERROR2 ERROR_TIME TIMER_CD FIRSTCHAR 
+  PAIR1READY PAIR2READY 
+SECTION: ".init"
+  Entry _Startup STARTUP_PLL STARTUP_SPI0 STARTUP_ATD1 STARTUP_PWM STARTUP_IO 
+SECTION: "LIBRARY_RAM"
+  KEYREADY LCHARACTER LKEY_FLG LVREF_BUF LVREF_NULL LVACT_BUF LVACT_NULL 
+  LERR_BUF LERR_NULL LEFF_BUF LEFF_NULL LKP_BUF LKP_NULL LKI_BUF LKI_NULL 
+SECTION: "MyCode"
+  main Top TASK_1 t1state0 t1state1 t1_bs t1_ent t1_f1 t1_f2 t1_dh t1state2 
+  t1state3 t1state4 f1clr t1state5 f2clr t1state6 ent1 ent2 e1l1 e2l1 e1l2 e2l2 
+  e_exit exit_t1 TASK_2 t2state0 t2state1 t2state2 exit_t2 TASK_3 t3state0 
+  loop1 loop2 loop3 loop4 t3state1 t3echo t3bs t3e1l1 t3e2l1 t3e1l2 t3e2l2 
+  t3state2 echo1 echo2 t3state3 bs1 bs2 t3state4 t3e1l1p e1loop1 t3e2l1p 
+  e1loop2 t3state5 t3e1l2p e2loop1 t3e2l2p e2loop2 t3state6 t3state7 exit_t3 
+  exit_t3_l1 e1loop6 exit_t3_l2 e1loop7 TASK_4 t4state0 t4state1 exit_t4s1 
+  t4state2 exit_t4s2 t4state3 exit_t4s3 t4state4 exit_t4s4 t4state5 exit_t4s5 
+  t4state6 exit_t4s6 notready1 TASK_5 t5state0 t5state1 t5s1a COUNT_1_DONE 
+  exit_t5s2 TASK_6 t6state0 t6state1 exit_t6s1 t6state2 exit_t6s2 t6state3 
+  exit_t6s3 t6state4 exit_t6s4 t6state5 exit_t6s5 t6state6 exit_t6s6 notready2 
+  TASK_7 t7state0 t7state1 t7s1a COUNT_2_DONE exit_t7s2 TASK_8 t8state0 
+  t8state1 DELAY_1ms INNER EXIT PUTCHAR1ST PUTCHAR exit CONVERT conv_loop 
+  conv_done TOO_LARGE ZERO_MAG exit_conversion T1 T2 F1 F2 LARGE ZERO BLANK 
+SECTION: "Lib_Keypad"
+  INITKEY GETCHAR ISR_KEYPAD VAR00001 
+SECTION: "Lib_Encoder"
+  STARTUP_ENCODER READ_ENCODER DISABLE_ENCODER 
+SECTION: "Lib_LCD"
+  INITLCD LCD_RESET LCD_WRITE BF_TEST LCD_READ DISP_OFF DISP_ON CURSOR_ON 
+  CURSOR_OFF SETADDR GETADDR CLRSCREEN OUTCHAR_AT OUTCHAR BS_HANDLE 
+  OUTSTRING_AT OUTSTRING OUTLOOP OUTEXIT LCDTEMPLATE UPDATELCD_L1 UPDATELCD_L2 
+  INITMESS_L1 INITMESS_L2 LCDTEMPLATE_L1 LCDTEMPLATE_L2 
+SECTION: "Lib_Delay"
+  DELAY_MICRO MICRO_Loop DELAY_MILLI MILLI_Loop 
+
+*********************************************************************************************
+OBJECT LIST SORTED BY ADDRESS
+     Name                                      Addr   hSize   dSize     Ref    Section   RLIB
+---------------------------------------------------------------------------------------------
+     INITKEY                                    800      35      53       1   Lib_Keypad  
+     GETCHAR                                    835      10      16       1   Lib_Keypad  
+     ISR_KEYPAD                                 845      1C      28       1   Lib_Keypad  
+     VAR00001                                   861      14      20       1   Lib_Keypad  
+     STARTUP_ENCODER                            875      51      81       0   Lib_Encoder 
+     READ_ENCODER                               8C6      37      55       0   Lib_Encoder 
+     DISABLE_ENCODER                            8FD      29      41       1   Lib_Encoder 
+     INITLCD                                    926      6F     111       1   Lib_LCD     
+     LCD_RESET                                  995      19      25       3   Lib_LCD     
+     LCD_WRITE                                  9AE      18      24       7   Lib_LCD     
+     BF_TEST                                    9C6      14      20       0   Lib_LCD     
+     LCD_READ                                   9DA      14      20       2   Lib_LCD     
+     DISP_OFF                                   9EE       8       8       1   Lib_LCD     
+     DISP_ON                                    9F6       8       8       1   Lib_LCD     
+     CURSOR_ON                                  9FE       8       8       1   Lib_LCD     
+     CURSOR_OFF                                 A06       1       1       0   Lib_LCD     
+     SETADDR                                    A07       E      14      16   Lib_LCD     
+     GETADDR                                    A15       C      12       3   Lib_LCD     
+     CLRSCREEN                                  A21      1C      28       3   Lib_LCD     
+     OUTCHAR_AT                                 A3D       3       3       4   Lib_LCD     
+     OUTCHAR                                    A40       C      12       3   Lib_LCD     
+     BS_HANDLE                                  A4C       C      12       0   Lib_LCD     
+     OUTSTRING_AT                               A58       3       3       0   Lib_LCD     
+     OUTSTRING                                  A5B       2       2      10   Lib_LCD     
+     OUTLOOP                                    A5D       9       9       0   Lib_LCD     
+     OUTEXIT                                    A66       3       3       0   Lib_LCD     
+     LCDTEMPLATE                                A69      1E      30       0   Lib_LCD     
+     UPDATELCD_L1                               A87      31      49       0   Lib_LCD     
+     UPDATELCD_L2                               AB8      1B      27       0   Lib_LCD     
+     INITMESS_L1                                AD3      27      39       1   Lib_LCD     
+     INITMESS_L2                                AFA      28      40       1   Lib_LCD     
+     LCDTEMPLATE_L1                             B22      29      41       1   Lib_LCD     
+     LCDTEMPLATE_L2                             B4B      1D      29       1   Lib_LCD     
+     DELAY_MICRO                                B68       F      15       5   Lib_Delay   
+     MICRO_Loop                                 B77       D      13       0   Lib_Delay   
+     DELAY_MILLI                                B84       F      15       2   Lib_Delay   
+     MILLI_Loop                                 B93       D      13       0   Lib_Delay   
+     KEYREADY                                  1000       1       1       0   LIBRARY_RAM 
+     LCHARACTER                                1001       1       1       4   LIBRARY_RAM 
+     LKEY_FLG                                  1002       1       1       4   LIBRARY_RAM 
+     LVREF_BUF                                 1003       4       4       2   LIBRARY_RAM 
+     LVREF_NULL                                1007       1       1       0   LIBRARY_RAM 
+     LVACT_BUF                                 1008       4       4       2   LIBRARY_RAM 
+     LVACT_NULL                                100C       1       1       0   LIBRARY_RAM 
+     LERR_BUF                                  100D       4       4       2   LIBRARY_RAM 
+     LERR_NULL                                 1011       1       1       0   LIBRARY_RAM 
+     LEFF_BUF                                  1012       4       4       2   LIBRARY_RAM 
+     LEFF_NULL                                 1016       1       1       0   LIBRARY_RAM 
+     LKP_BUF                                   1017       5       5       2   LIBRARY_RAM 
+     LKP_NULL                                  101C       1       1       0   LIBRARY_RAM 
+     LKI_BUF                                   101D       5       5       2   LIBRARY_RAM 
+     LKI_NULL                                  1022       1       1       0   LIBRARY_RAM 
+     t1state                                   2400       1       1      14   .data       
+     t2state                                   2401       1       1       5   .data       
+     t3state                                   2402       1       1      20   .data       
+     t4state                                   2403       1       1       9   .data       
+     t5state                                   2404       1       1       3   .data       
+     t6state                                   2405       1       1       9   .data       
+     t7state                                   2406       1       1       3   .data       
+     t8state                                   2407       1       1       3   .data       
+     DONE_1                                    2408       1       1      10   .data       
+     DONE_2                                    2409       1       1      10   .data       
+     TICKS_1                                   240A       2       2       4   .data       
+     TICKS_2                                   240C       2       2       4   .data       
+     COUNT_1                                   240E       2       2       3   .data       
+     COUNT_2                                   2410       2       2       3   .data       
+     DPTR                                      2412       2       2       4   .data       
+     DECHO                                     2414       1       1       5   .data       
+     DBS                                       2415       1       1       5   .data       
+     DIGIT_COUNT                               2416       1       1       0   .data       
+     BUFFER                                    2417       5       5       4   .data       
+     BUFCLR                                    241C       1       1       0   .data       
+     KEY_FLG                                   241D       1       1       8   .data       
+     MOD                                       241E       1       1      12   .data       
+     COUNT                                     241F       1       1      13   .data       
+     KEY_BUF                                   2420       1       1      10   .data       
+     ERROR1                                    2421       1       1       7   .data       
+     ERROR2                                    2422       1       1       6   .data       
+     ERROR_TIME                                2423       2       2       2   .data       
+     TIMER_CD                                  2425       2       2       5   .data       
+     FIRSTCHAR                                 2427       1       1      15   .data       
+     PAIR1READY                                2428       1       1       6   .data       
+     PAIR2READY                                2429       1       1       6   .data       
+     main                                      4000      59      89       1   MyCode      
+     Top                                       4059      1A      26       0   MyCode      
+     TASK_1                                    4073      25      37       1   MyCode      
+     t1state0                                  4098       6       6       0   MyCode      
+     t1state1                                  409E      2C      44       0   MyCode      
+     t1_bs                                     40CA       6       6       0   MyCode      
+     t1_ent                                    40D0       6       6       0   MyCode      
+     t1_f1                                     40D6       6       6       0   MyCode      
+     t1_f2                                     40DC       6       6       0   MyCode      
+     t1_dh                                     40E2       6       6       0   MyCode      
+     t1state2                                  40E8      24      36       0   MyCode      
+     t1state3                                  410C      25      37       0   MyCode      
+     t1state4                                  4131      14      20       0   MyCode      
+     f1clr                                     4145      21      33       0   MyCode      
+     t1state5                                  4166      14      20       0   MyCode      
+     f2clr                                     417A      1C      28       0   MyCode      
+     t1state6                                  4196      16      22       0   MyCode      
+     ent1                                      41AC      15      21       0   MyCode      
+     ent2                                      41C1      15      21       0   MyCode      
+     e1l1                                      41D6       A      10       0   MyCode      
+     e2l1                                      41E0       A      10       0   MyCode      
+     e1l2                                      41EA       A      10       0   MyCode      
+     e2l2                                      41F4       A      10       0   MyCode      
+     e_exit                                    41FE       B      11       0   MyCode      
+     exit_t1                                   4209       6       6       0   MyCode      
+     TASK_2                                    420F       C      12       1   MyCode      
+     t2state0                                  421B       9       9       0   MyCode      
+     t2state1                                  4224       B      11       0   MyCode      
+     t2state2                                  422F      15      21       0   MyCode      
+     exit_t2                                   4244       1       1       0   MyCode      
+     TASK_3                                    4245      2B      43       1   MyCode      
+     t3state0                                  4270       B      11       0   MyCode      
+     loop1                                     427B      10      16       0   MyCode      
+     loop2                                     428B      10      16       0   MyCode      
+     loop3                                     429B      10      16       0   MyCode      
+     loop4                                     42AB       E      14       0   MyCode      
+     t3state1                                  42B9      21      33       0   MyCode      
+     t3echo                                    42DA       6       6       0   MyCode      
+     t3bs                                      42E0       6       6       0   MyCode      
+     t3e1l1                                    42E6       6       6       0   MyCode      
+     t3e2l1                                    42EC       6       6       0   MyCode      
+     t3e1l2                                    42F2       6       6       0   MyCode      
+     t3e2l2                                    42F8       6       6       0   MyCode      
+     t3state2                                  42FE      10      16       0   MyCode      
+     echo1                                     430E      16      22       0   MyCode      
+     echo2                                     4324      16      22       0   MyCode      
+     t3state3                                  433A      10      16       0   MyCode      
+     bs1                                       434A      15      21       0   MyCode      
+     bs2                                       435F      15      21       0   MyCode      
+     t3state4                                  4374       9       9       0   MyCode      
+     t3e1l1p                                   437D       8       8       0   MyCode      
+     e1loop1                                   4385       E      14       0   MyCode      
+     t3e2l1p                                   4393       8       8       0   MyCode      
+     e1loop2                                   439B       E      14       0   MyCode      
+     t3state5                                  43A9       9       9       0   MyCode      
+     t3e1l2p                                   43B2       8       8       0   MyCode      
+     e2loop1                                   43BA       E      14       0   MyCode      
+     t3e2l2p                                   43C8       8       8       0   MyCode      
+     e2loop2                                   43D0       E      14       0   MyCode      
+     t3state6                                  43DE       C      12       0   MyCode      
+     t3state7                                  43EA      10      16       0   MyCode      
+     exit_t3                                   43FA       7       7       0   MyCode      
+     exit_t3_l1                                4401       8       8       0   MyCode      
+     e1loop6                                   4409      14      20       0   MyCode      
+     exit_t3_l2                                441D       8       8       0   MyCode      
+     e1loop7                                   4425      14      20       0   MyCode      
+     TASK_4                                    4439      1F      31       1   MyCode      
+     t4state0                                  4458       E      14       0   MyCode      
+     t4state1                                  4466       E      14       0   MyCode      
+     exit_t4s1                                 4474       1       1       0   MyCode      
+     t4state2                                  4475       E      14       0   MyCode      
+     exit_t4s2                                 4483       1       1       0   MyCode      
+     t4state3                                  4484       E      14       0   MyCode      
+     exit_t4s3                                 4492       1       1       0   MyCode      
+     t4state4                                  4493       E      14       0   MyCode      
+     exit_t4s4                                 44A1       1       1       0   MyCode      
+     t4state5                                  44A2       E      14       0   MyCode      
+     exit_t4s5                                 44B0       1       1       0   MyCode      
+     t4state6                                  44B1       E      14       0   MyCode      
+     exit_t4s6                                 44BF       1       1       0   MyCode      
+     notready1                                 44C0      11      17       0   MyCode      
+     TASK_5                                    44D1       9       9       1   MyCode      
+     t5state0                                  44DA       F      15       0   MyCode      
+     t5state1                                  44E9       9       9       0   MyCode      
+     t5s1a                                     44F2       7       7       0   MyCode      
+     COUNT_1_DONE                              44F9       C      12       0   MyCode      
+     exit_t5s2                                 4505       4       4       0   MyCode      
+     TASK_6                                    4509      1F      31       1   MyCode      
+     t6state0                                  4528       E      14       0   MyCode      
+     t6state1                                  4536       E      14       0   MyCode      
+     exit_t6s1                                 4544       1       1       0   MyCode      
+     t6state2                                  4545       E      14       0   MyCode      
+     exit_t6s2                                 4553       1       1       0   MyCode      
+     t6state3                                  4554       E      14       0   MyCode      
+     exit_t6s3                                 4562       1       1       0   MyCode      
+     t6state4                                  4563       E      14       0   MyCode      
+     exit_t6s4                                 4571       1       1       0   MyCode      
+     t6state5                                  4572       E      14       0   MyCode      
+     exit_t6s5                                 4580       1       1       0   MyCode      
+     t6state6                                  4581       E      14       0   MyCode      
+     exit_t6s6                                 458F       1       1       0   MyCode      
+     notready2                                 4590      11      17       0   MyCode      
+     TASK_7                                    45A1       9       9       1   MyCode      
+     t7state0                                  45AA       F      15       0   MyCode      
+     t7state1                                  45B9       9       9       0   MyCode      
+     t7s1a                                     45C2       7       7       0   MyCode      
+     COUNT_2_DONE                              45C9       C      12       0   MyCode      
+     exit_t7s2                                 45D5       4       4       0   MyCode      
+     TASK_8                                    45D9       9       9       1   MyCode      
+     t8state0                                  45E2       6       6       0   MyCode      
+     t8state1                                  45E8       4       4       0   MyCode      
+     DELAY_1ms                                 45EC       3       3       1   MyCode      
+     INNER                                     45EF       8       8       0   MyCode      
+     EXIT                                      45F7       1       1       0   MyCode      
+     PUTCHAR1ST                                45F8       A      10      12   MyCode      
+     PUTCHAR                                   4602       F      15      12   MyCode      
+     exit                                      4611       6       6       0   MyCode      
+     CONVERT                                   4617      10      16       2   MyCode      
+     conv_loop                                 4627      21      33       0   MyCode      
+     conv_done                                 4648       A      10       0   MyCode      
+     TOO_LARGE                                 4652       4       4       0   MyCode      
+     ZERO_MAG                                  4656       2       2       0   MyCode      
+     exit_conversion                           4658       9       9       0   MyCode      
+     T1                                        4661       8       8       1   MyCode      
+     T2                                        4669       8       8       1   MyCode      
+     F1                                        4671      1B      27       1   MyCode      
+     F2                                        468C      1B      27       1   MyCode      
+     LARGE                                     46A7      21      33       2   MyCode      
+     ZERO                                      46C8      21      33       2   MyCode      
+     BLANK                                     46E9       7       7       4   MyCode      
+     Entry                                     C000       0       0       1   .init       
+     _Startup                                  C000      13      19       0   .init       
+     STARTUP_PLL                               C013      20      32       1   .init       
+     STARTUP_SPI0                              C033      45      69       1   .init       
+     STARTUP_ATD1                              C078      1A      26       0   .init       
+     STARTUP_PWM                               C092      1D      29       0   .init       
+     STARTUP_IO                                C0AF      34      52       1   .init       
+     VAR00002                                  FFCE       2       2       0   .text       
+     VAR00001                                  FFFE       2       2       0   .text       
+
+*********************************************************************************************
+UNUSED-OBJECTS SECTION
+---------------------------------------------------------------------------------------------
+
+*********************************************************************************************
+COPYDOWN SECTION
+---------------------------------------------------------------------------------------------
+
+*********************************************************************************************
+OBJECT-DEPENDENCIES SECTION
+---------------------------------------------------------------------------------------------
+INITKEY                   USES LCHARACTER LKEY_FLG 
+GETCHAR                   USES LCHARACTER LKEY_FLG 
+ISR_KEYPAD                USES VAR00001 LCHARACTER LKEY_FLG 
+INITLCD                   USES LVREF_BUF LVACT_BUF LERR_BUF LEFF_BUF LKI_BUF 
+                                LKP_BUF LCD_RESET DELAY_MICRO LCD_WRITE DISP_OFF 
+                                CLRSCREEN DISP_ON SETADDR INITMESS_L1 OUTSTRING 
+                                INITMESS_L2 DELAY_MILLI 
+BF_TEST                   USES LCD_READ DELAY_MICRO 
+DISP_OFF                  USES LCD_WRITE 
+DISP_ON                   USES LCD_WRITE 
+CURSOR_ON                 USES LCD_WRITE 
+SETADDR                   USES LCD_WRITE 
+GETADDR                   USES LCD_READ 
+CLRSCREEN                 USES LCD_WRITE GETADDR SETADDR OUTCHAR 
+OUTCHAR_AT                USES SETADDR 
+OUTCHAR                   USES LCD_WRITE 
+BS_HANDLE                 USES GETADDR SETADDR 
+OUTSTRING_AT              USES SETADDR 
+OUTLOOP                   USES OUTCHAR 
+LCDTEMPLATE               USES CLRSCREEN SETADDR LCDTEMPLATE_L1 OUTSTRING 
+                                LCDTEMPLATE_L2 
+UPDATELCD_L1              USES SETADDR LVREF_BUF OUTSTRING LVACT_BUF LERR_BUF 
+                                LEFF_BUF 
+UPDATELCD_L2              USES SETADDR LKP_BUF OUTSTRING LKI_BUF 
+main                      USES t1state t2state t3state t4state t5state t6state 
+                                t7state t8state FIRSTCHAR ERROR_TIME MOD DPTR COUNT 
+                                BUFFER DECHO DBS KEY_BUF KEY_FLG ERROR1 ERROR2 
+                                TIMER_CD PAIR1READY PAIR2READY TICKS_1 TICKS_2 INITLCD 
+Top                       USES TASK_1 TASK_2 TASK_3 TASK_4 TASK_5 TASK_6 
+                                TASK_7 TASK_8 
+TASK_1                    USES t1state 
+t1state0                  USES t1state 
+t1state1                  USES KEY_FLG KEY_BUF MOD 
+t1_bs                     USES t1state 
+t1_ent                    USES t1state 
+t1_f1                     USES t1state 
+t1_f2                     USES t1state 
+t1_dh                     USES t1state 
+t1state2                  USES KEY_FLG COUNT DECHO BUFFER KEY_BUF t1state 
+t1state3                  USES COUNT BUFFER DBS t1state KEY_BUF KEY_FLG 
+t1state4                  USES MOD PAIR1READY BLANK PUTCHAR1ST 
+f1clr                     USES PUTCHAR FIRSTCHAR GETADDR MOD COUNT t1state 
+                                KEY_BUF KEY_FLG 
+t1state5                  USES MOD PAIR2READY BLANK PUTCHAR1ST 
+f2clr                     USES PUTCHAR FIRSTCHAR MOD COUNT t1state KEY_BUF 
+                                KEY_FLG 
+t1state6                  USES KEY_BUF KEY_FLG MOD 
+ent1                      USES CONVERT TICKS_1 PAIR1READY 
+ent2                      USES CONVERT TICKS_2 PAIR2READY 
+e1l1                      USES ERROR1 PAIR1READY 
+e2l1                      USES ERROR1 PAIR1READY 
+e1l2                      USES ERROR2 PAIR2READY 
+e2l2                      USES ERROR2 PAIR2READY 
+e_exit                    USES MOD t1state 
+exit_t1                   USES t1state 
+TASK_2                    USES t2state 
+t2state0                  USES INITKEY t2state 
+t2state1                  USES LKEY_FLG t2state 
+t2state2                  USES GETCHAR KEY_BUF KEY_FLG t2state 
+TASK_3                    USES t3state 
+t3state0                  USES CURSOR_ON T1 PUTCHAR1ST 
+loop1                     USES PUTCHAR FIRSTCHAR T2 PUTCHAR1ST 
+loop2                     USES PUTCHAR FIRSTCHAR F1 PUTCHAR1ST 
+loop3                     USES PUTCHAR FIRSTCHAR F2 PUTCHAR1ST 
+loop4                     USES PUTCHAR FIRSTCHAR t3state 
+t3state1                  USES DECHO DBS ERROR1 ERROR2 
+t3echo                    USES t3state 
+t3bs                      USES t3state 
+t3e1l1                    USES t3state 
+t3e2l1                    USES t3state 
+t3e1l2                    USES t3state 
+t3e2l2                    USES t3state 
+t3state2                  USES MOD 
+echo1                     USES COUNT KEY_BUF OUTCHAR_AT DECHO t3state 
+echo2                     USES COUNT KEY_BUF OUTCHAR_AT DECHO t3state 
+t3state3                  USES MOD 
+bs1                       USES COUNT OUTCHAR_AT DBS t3state 
+bs2                       USES COUNT OUTCHAR_AT DBS t3state 
+t3state4                  USES ERROR1 
+t3e1l1p                   USES LARGE PUTCHAR1ST 
+e1loop1                   USES PUTCHAR FIRSTCHAR t3state 
+t3e2l1p                   USES ZERO PUTCHAR1ST 
+e1loop2                   USES PUTCHAR FIRSTCHAR t3state 
+t3state5                  USES ERROR2 
+t3e1l2p                   USES LARGE PUTCHAR1ST 
+e2loop1                   USES PUTCHAR FIRSTCHAR t3state 
+t3e2l2p                   USES ZERO PUTCHAR1ST 
+e2loop2                   USES PUTCHAR FIRSTCHAR t3state 
+t3state6                  USES ERROR_TIME TIMER_CD t3state 
+t3state7                  USES TIMER_CD 
+exit_t3                   USES ERROR1 
+exit_t3_l1                USES BLANK PUTCHAR1ST 
+e1loop6                   USES PUTCHAR FIRSTCHAR ERROR1 MOD t3state 
+exit_t3_l2                USES BLANK PUTCHAR1ST 
+e1loop7                   USES PUTCHAR FIRSTCHAR ERROR2 MOD t3state 
+TASK_4                    USES PAIR1READY t4state 
+t4state0                  USES t4state 
+t4state1                  USES DONE_1 t4state 
+t4state2                  USES DONE_1 t4state 
+t4state3                  USES DONE_1 t4state 
+t4state4                  USES DONE_1 t4state 
+t4state5                  USES DONE_1 t4state 
+t4state6                  USES DONE_1 t4state 
+TASK_5                    USES t5state 
+t5state0                  USES TICKS_1 COUNT_1 DONE_1 t5state 
+t5state1                  USES DONE_1 
+t5s1a                     USES COUNT_1 
+COUNT_1_DONE              USES DONE_1 TICKS_1 COUNT_1 
+exit_t5s2                 USES DONE_1 
+TASK_6                    USES PAIR2READY t6state 
+t6state0                  USES t6state 
+t6state1                  USES DONE_2 t6state 
+t6state2                  USES DONE_2 t6state 
+t6state3                  USES DONE_2 t6state 
+t6state4                  USES DONE_2 t6state 
+t6state5                  USES DONE_2 t6state 
+t6state6                  USES DONE_2 t6state 
+TASK_7                    USES t7state 
+t7state0                  USES TICKS_2 COUNT_2 DONE_2 t7state 
+t7state1                  USES DONE_2 
+t7s1a                     USES COUNT_2 
+COUNT_2_DONE              USES DONE_2 TICKS_2 COUNT_2 
+exit_t7s2                 USES DONE_2 
+TASK_8                    USES t8state 
+t8state0                  USES t8state 
+t8state1                  USES DELAY_1ms 
+PUTCHAR1ST                USES DPTR SETADDR FIRSTCHAR 
+PUTCHAR                   USES DPTR OUTCHAR 
+exit                      USES FIRSTCHAR 
+CONVERT                   USES BUFFER 
+conv_loop                 USES COUNT 
+_Startup                  USES __SEG_END_SSTACK STARTUP_PLL STARTUP_IO 
+                                STARTUP_SPI0 DISABLE_ENCODER main 
+STARTUP_SPI0              USES DELAY_MILLI 
+STARTUP_ATD1              USES DELAY_MICRO 
+
+*********************************************************************************************
+DEPENDENCY TREE
+*********************************************************************************************
+ main and _Startup Group
+ | 
+ +- main                
+ |  | 
+ |  +- INITLCD             
+ |     | 
+ |     +- LCD_RESET           
+ |     |    
+ |     +- DELAY_MICRO         
+ |     |    
+ |     +- LCD_WRITE           
+ |     |    
+ |     +- DISP_OFF            
+ |     |  | 
+ |     |  +- LCD_WRITE            (see above)
+ |     |     
+ |     +- CLRSCREEN           
+ |     |  | 
+ |     |  +- LCD_WRITE            (see above)
+ |     |  |  
+ |     |  +- GETADDR             
+ |     |  |  | 
+ |     |  |  +- LCD_READ            
+ |     |  |       
+ |     |  +- SETADDR             
+ |     |  |  | 
+ |     |  |  +- LCD_WRITE            (see above)
+ |     |  |     
+ |     |  +- OUTCHAR             
+ |     |     | 
+ |     |     +- LCD_WRITE            (see above)
+ |     |        
+ |     +- DISP_ON             
+ |     |  | 
+ |     |  +- LCD_WRITE            (see above)
+ |     |     
+ |     +- SETADDR              (see above)
+ |     |  
+ |     +- INITMESS_L1         
+ |     |    
+ |     +- OUTSTRING           
+ |     |    
+ |     +- INITMESS_L2         
+ |     |    
+ |     +- DELAY_MILLI         
+ |          
+ +- Entry               
+      
+ _ORG00001           
+ | 
+ +- Entry                (see above)
+    
+ _ORG00002           
+ | 
+ +- ISR_KEYPAD          
+    | 
+    +- VAR00001            
+         
+*********************************************************************************************
+STATISTIC SECTION
+---------------------------------------------------------------------------------------------
+
+ExeFile:
+--------
+Number of blocks to be downloaded: 8
+Total size of all blocks to be downloaded: 2935
+

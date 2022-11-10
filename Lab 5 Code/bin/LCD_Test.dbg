@@ -1,0 +1,75 @@
+;**************************************************************************************
+;* Lab 2 shell code for students *
+;**************************************************************************************
+;* Summary: *
+;* This code is designed for use with the 2016 hardware for ME305. This code accepts *
+;* two two-byte integers through the debugger and uses these value to adjust the *
+;* timing of two pairs of LEDs connected to Port P. *
+;* *
+;* Author: William R. Murray *
+;* Cal Poly University *
+;* January 2020 *
+;* *
+;* Revision History: *
+;* WRM 04/13/2022 *
+;* - reduced fully functional Lab 2 code to an almost functioning shell as a *
+;* starting point for students *
+;* *
+;* ToDo: *
+;* - students complete, test, and debug as necessary *
+;**************************************************************************************
+;/------------------------------------------------------------------------------------\
+;| Include all associated files |
+;\------------------------------------------------------------------------------------/
+; The following are external files to be included during assembly
+;/------------------------------------------------------------------------------------\
+;| External Definitions |
+;\------------------------------------------------------------------------------------/
+; All labels that are referenced by the linker need an external definition
+ XDEF LCD_Test
+;/------------------------------------------------------------------------------------\
+;| External References |
+;\------------------------------------------------------------------------------------/
+; All labels from other files must have an external reference
+ XREF ENABLE_MOTOR, DISABLE_MOTOR
+ XREF STARTUP_MOTOR, UPDATE_MOTOR, CURRENT_MOTOR
+ XREF STARTUP_PWM, STARTUP_ATD0, STARTUP_ATD1
+ XREF OUTDACA, OUTDACB
+ XREF STARTUP_ENCODER, READ_ENCODER
+ XREF INITLCD, SETADDR, GETADDR, CURSOR_ON, CURSOR_OFF, DISP_OFF
+ XREF OUTCHAR, OUTCHAR_AT, OUTSTRING, OUTSTRING_AT
+ XREF INITKEY, LKEY_FLG, GETCHAR
+ XREF LCDTEMPLATE, UPDATELCD_L1, UPDATELCD_L2
+ XREF LVREF_BUF, LVACT_BUF, LERR_BUF,LEFF_BUF, LKP_BUF, LKI_BUF
+ XREF Entry, ISR_KEYPAD
+;/------------------------------------------------------------------------------------\
+;| Assembler Equates |
+;\------------------------------------------------------------------------------------/
+
+;/------------------------------------------------------------------------------------\
+;| Variables in RAM |
+;\------------------------------------------------------------------------------------/
+DEFAULT_RAM: SECTION
+
+;/------------------------------------------------------------------------------------\
+;| Main Program Code |
+;\------------------------------------------------------------------------------------/
+MyCode: SECTION
+LCD_Test:
+  jsr INITLCD   ;initialize the LCD
+  
+ 
+;/------------------------------------------------------------------------------------\
+;| Subroutines |
+;/------------------------------------------------------------------------------------/
+
+;/------------------------------------------------------------------------------------\
+;| Messages |
+;/------------------------------------------------------------------------------------/
+; Add ASCII messages here:
+;/------------------------------------------------------------------------------------\
+;| Vectors |
+;\------------------------------------------------------------------------------------/
+; Add interrupt and reset vectors here:
+ ORG $FFFE ; reset vector address
+ DC.W Entry

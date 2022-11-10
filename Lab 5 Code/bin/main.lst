@@ -1,0 +1,1208 @@
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+    1    1                      ;**************************************************************************************
+    2    2                      ;* Lab 4                                                                              *
+    3    3                      ;**************************************************************************************
+    4    4                      ;* Summary:                                                                           *
+    5    5                      ;*   -   This code seeks to request a wave and a wave period from the user and        *
+    6    6                      ;*       then output it onto it's board's DAC.                                        *
+    7    7                      ;*                                                                                    *
+    8    8                      ;* Author: Nathan Burtnett, Tom Taylor                                                *
+    9    9                      ;*   Cal Poly University                                                              *
+   10   10                      ;*   Fall 2022                                                                        *
+   11   11                      ;*                                                                                    *
+   12   12                      ;* Revision History:                                                                  *
+   13   13                      ;*   -                                                                                *                                             
+   14   14                      ;**************************************************************************************
+   15   15                      
+   16   16                      ;/------------------------------------------------------------------------------------\
+   17   17                      ;| External Definitions                                                               |
+   18   18                      ;\------------------------------------------------------------------------------------/
+   19   19                                    XDEF  main
+   20   20                      ;/------------------------------------------------------------------------------------\
+   21   21                      ;| External References                                                                |
+   22   22                      ;\------------------------------------------------------------------------------------/
+   23   23                                    XREF  ENABLE_MOTOR, DISABLE_MOTOR
+   24   24                                    XREF  STARTUP_MOTOR, UPDATE_MOTOR, CURRENT_MOTOR
+   25   25                                    XREF  STARTUP_PWM, STARTUP_ATD0, STARTUP_ATD1
+   26   26                                    XREF  OUTDACA, OUTDACB
+   27   27                                    XREF  STARTUP_ENCODER, READ_ENCODER
+   28   28                                    XREF  INITLCD, SETADDR, GETADDR, CURSOR_ON, CURSOR_OFF, DISP_OFF
+   29   29                                    XREF  OUTCHAR, OUTCHAR_AT, OUTSTRING, OUTSTRING_AT
+   30   30                                    XREF  INITKEY, LKEY_FLG, GETCHAR
+   31   31                                    XREF  LCDTEMPLATE, UPDATELCD_L1, UPDATELCD_L2
+   32   32                                    XREF  LVREF_BUF, LVACT_BUF, LERR_BUF,LEFF_BUF, LKP_BUF, LKI_BUF
+   33   33                                    XREF  Entry, ISR_KEYPAD
+   34   34                                  
+   35   35                      ;/------------------------------------------------------------------------------------\
+   36   36                      ;| Assembler Equates                                                                  |
+   37   37                      ;\------------------------------------------------------------------------------------/
+   38   38                      ;INTERRUPT EQUATES
+   39   39          0000 03E8   INTERVAL      EQU   $03E8     ;sets interval
+   40   40                      
+   41   41          0000 0040   TIOS          EQU   $0040     ;sets location of TIOS
+   42   42          0000 0001   C0            EQU   %00000001 ;sets value of C0 which will go into TIOS
+   43   43                      
+   44   44          0000 0049   TCTL2         EQU   $0049     ;sets location of TCTL2
+   45   45          0000 0001   CROA_TOGGLE   EQU   %00000001 ;sets value of CROA_TOGGLE which will go into TIOS
+   46   46                      
+   47   47          0000 004E   TFLG1         EQU   $004E     ;sets location of TFLG1
+   48   48          0000 0001   C0F_CLEAR     EQU   %00000001 ;sets value C0F_CLEAR which will go into TFLG1
+   49   49                      
+   50   50          0000 004C   TIE           EQU   $004C     ;sets location of TIE
+   51   51          0000 0001   C0I_SET       EQU   %00000001 ;sets value C0I_SET which will go into TIE
+   52   52                      
+   53   53          0000 0046   TSCR1         EQU   $0046     ;sets location of TSCR1
+   54   54          0000 00A0   TEN_TSFRZ_SET EQU   %10100000 ;sets value TEN_TSFRZ_SET which will go into TSCR1
+   55   55          0000 0044   TCNT          EQU   $0044     ;sets location of TCNT
+   56   56          0000 0050   TC0H          EQU   $0050     ;sets location of TC0H
+   57   57                      ;/------------------------------------------------------------------------------------\
+   58   58                      ;| Variables in RAM                                                                   |
+   59   59                      ;\------------------------------------------------------------------------------------/
+   60   60                      DEFAULT_RAM:  SECTION
+   61   61                      ;WAVEFORM VARIABLES
+   62   62   000000             NINT        DS.B 1    ;number of interrupts/BTI
+   63   63   000001             CINT        DS.B 1    ;number of interrupts remaining
+   64   64   000002             WAVEPTR     DS.W 1    ;address of first byte of wavedata
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+   65   65   000004             SEGPTR      DS.W 1    ;address of first byte of data in next segment, points to next DC.B
+   66   66   000006             LSEG        DS.B 1    ;remaining segment length (BTIs)
+   67   67   000007             CSEG        DS.B 1    ;remaining number of segments (BTIs)
+   68   68   000008             VALUE       DS.W 1    ;next DAC output
+   69   69   00000A             SEGINC      DS.W 1    ;slope (DAC COUNTS/BTI)
+   70   70                      ;TASK VARIABLES
+   71   71   00000C             MMSTATE     DS.B 1    ;mastermind state variable
+   72   72   00000D             KPSTATE     DS.B 1    ;keypad state variable
+   73   73   00000E             DPSTATE     DS.B 1    ;display state variable
+   74   74   00000F             TCSTATE     DS.B 1    ;TC0 state variable
+   75   75   000010             FGSTATE     DS.B 1    ;function generator state variable
+   76   76   000011             PRSTATE     DS.B 1    ;print request state variable 
+   77   77                      ;ITCVs
+   78   78   000012             NEWBTI      DS.B 1    ;flg tells function generator to compute new value 
+   79   79   000013             KEY_FLG     DS.B 1    ;key has been pressed
+   80   80   000014             MODE        DS.B 1    ;mode flag (0 WF select, 1 period select, 2 update FG)
+   81   81   000015             PREQ        DS.B 1    ;request print
+   82   82   000016             ERROR       DS.B 1    ;keeps track of error (0 none, 1 mag too large , 2 mag 0, 3 no digits)
+   83   83                      ;KEYBOARD VARIABLES
+   84   84   000017             KEY_BUF     DS.B 1    ;stores key that has just been pressed
+   85   85   000018             BUFFER      DS.B 3    ;stores key digits 
+   86   86   00001B             COUNT       DS.B 1    ;number of digits entered 
+   87   87                      ;DISPLAY VARIABLES
+   88   88   00001C             DBS         DS.B 1    ;display backspace
+   89   89   00001D             DECHO       DS.B 1    ;display echo
+   90   90   00001E             DWAVE       DS.B 1    ;display wave (superboolean)
+   91   91   00001F             DWLINE      DS.B 1    ;display wave line
+   92   92   000020             SPLASH      DS.B 1    ;used to hold the splash tasks in place till complete
+   93   93   000021             DPe1p       DS.B 1    ;sub-state counter for error 1
+   94   94   000022             DPe2p       DS.B 1    ;sub-state counter for error 2
+   95   95   000023             DPe3p       DS.B 1    ;sub-state counter for error 13
+   96   96   000024             ERRORCOUNT  DS.W 1    ;used to count down for error display
+   97   97   000026             L2CURSOR    DS.B 1    ;line 2: finish printing - waiting for NINT
+   98   98                      ;PRINTING VARIABLES
+   99   99   000027             DPTR        DS.W 1    ;points to the next character to display
+  100  100   000029             FIRSTCHAR   DS.B 1    ;flag when first character is being printed
+  101  101   00002A             MES         DS.W 1    ;stores the address for current message
+  102  102   00002C             ADDR        DS.B 1    ;stores LCD address for where message shoul be displayed
+  103  103                      ;FUNCTION GEN VARIABLES
+  104  104   00002D             DPRMPT      DS.B 1    ;display prompt
+  105  105   00002E             NEWWAVE     DS.B 1    ;allows function generator to run
+  106  106   00002F             NINTG       DS.B 1    ;checks if right NINT is chosen
+  107  107                      ;/------------------------------------------------------------------------------------\
+  108  108                      ;|  Main Program Code                                                                 |
+  109  109                      ;\------------------------------------------------------------------------------------/
+  110  110                      MyCode:       SECTION
+  111  111                      main:
+  112  112                        ;---CLEAR VARIABLES---
+  113  113                          ;clear waveform variables
+  114  114   000000 79xx xx           clr NINT
+  115  115   000003 79xx xx           clr CINT
+  116  116   000006 1879 xxxx         clrw WAVEPTR
+  117  117   00000A 1879 xxxx         clrw SEGPTR
+  118  118   00000E 79xx xx           clr LSEG
+  119  119   000011 79xx xx           clr CSEG
+  120  120   000014 79xx xx           clr VALUE
+  121  121   000017 79xx xx           clr NEWBTI
+  122  122   00001A 79xx xx           clr SEGINC
+  123  123                          ;clear state variables
+  124  124   00001D 79xx xx           clr MMSTATE
+  125  125   000020 79xx xx           clr KPSTATE
+  126  126   000023 79xx xx           clr DPSTATE
+  127  127   000026 79xx xx           clr TCSTATE
+  128  128   000029 79xx xx           clr FGSTATE
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  129  129   00002C 79xx xx           clr PRSTATE
+  130  130                          ;clear ITCVs  
+  131  131   00002F 79xx xx           clr MODE
+  132  132   000032 79xx xx           clr PREQ
+  133  133   000035 79xx xx           clr ERROR
+  134  134   000038 79xx xx           clr SPLASH
+  135  135   00003B 79xx xx           clr DPTR
+  136  136   00003E 79xx xx           clr DECHO
+  137  137   000041 79xx xx           clr DBS
+  138  138   000044 79xx xx           clr DWAVE
+  139  139   000047 79xx xx           clr DWLINE
+  140  140   00004A 79xx xx           clr NEWWAVE
+  141  141   00004D 79xx xx           clr L2CURSOR
+  142  142                          ;clear message variables
+  143  143   000050 79xx xx           clr COUNT
+  144  144   000053 79xx xx           clr DPe1p
+  145  145   000056 79xx xx           clr DPe2p
+  146  146   000059 79xx xx           clr DPe3p
+  147  147   00005C 1879 xxxx         clrw ERRORCOUNT
+  148  148   000060 79xx xx           clr KEY_BUF
+  149  149                        
+  150  150                        TOP:
+  151  151   000063 16xx xx         jsr MASTERMIND        ;jumps to Mastermind task
+  152  152   000066 16xx xx         jsr KEYPAD            ;jumps to keypad task
+  153  153   000069 16xx xx         jsr DISPLAY           ;jumps to display task
+  154  154   00006C 16xx xx         jsr TC0               ;jumps to timer channel 0 task
+  155  155   00006F 16xx xx         jsr FUNCTIONGENERATOR ;jumps to function generator 0 task
+  156  156   000072 16xx xx         jsr PRINTREQUEST      ;jumps to print requesting 
+  157  157   000075 20EC            bra TOP               ;go back to TOP and loop through endlessly
+  158  158                        
+  159  159                      ;/------------------------------------------------------------------------------------\
+  160  160                      ;| Tasks                                                                              |
+  161  161                      ;\------------------------------------------------------------------------------------/
+  162  162                      ;//////////////////////////MASTERMIND//////////////////////////
+  163  163                      MASTERMIND: ;Mastermind handeles the logic of ITCV's and what happens to keypad entries
+  164  164   000077 B6xx xx       ldaa MMSTATE      ;loads acc A with the mastermind state variable       
+  165  165   00007A 8100          cmpa #$00
+  166  166   00007C 1827 0019     lbeq MMState0     ;if MMSTATE is 0 go to state 0
+  167  167   000080 8101          cmpa #$01
+  168  168   000082 1827 0019     lbeq MMState1     ;if MMSTATE is 1 go to state 1
+  169  169   000086 8102          cmpa #$02
+  170  170   000088 1827 00C2     lbeq MMState2     ;if MMSTATE is 2 go to state 2
+  171  171   00008C 8103          cmpa #$03
+  172  172   00008E 1827 00D7     lbeq MMState3     ;if MMSTATE is 3 go to state 3
+  173  173   000092 8104          cmpa #$04
+  174  174   000094 1827 00EC     lbeq MMState4     ;if MMSTATE is 4 go to state 4
+  175  175   000098 00            bgnd              ;stop program if state is undefined (error checking)
+  176  176                      
+  177  177                        MMState0:   ;INIT
+  178  178   000099 180B 01xx       movb #$01, MMSTATE  ;nothing to init, go to next state
+             00009D xx         
+  179  179   00009E 3D              rts
+  180  180                          
+  181  181                        MMState1:   ;HUB
+  182  182   00009F F7xx xx         tst KEY_FLG         ;tests if key flag is set
+  183  183   0000A2 1827 012F       lbeq exit_MM        ;branch to exit if key flag is 0 
+  184  184   0000A6 B6xx xx         ldaa MODE           ;check which mode the program is in
+  185  185   0000A9 8100            cmpa #$00
+  186  186   0000AB 1827 000D       lbeq mode0          ;mode 0: go to mode0
+  187  187   0000AF 8101            cmpa #$01
+  188  188   0000B1 1827 0071       lbeq mode1          ;mode 1: go to mode1
+  189  189   0000B5 8102            cmpa #$02
+  190  190   0000B7 1827 0001       lbeq mode0          ;mode 2: go to mode0
+  191  191   0000BB 3D              rts
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  192  192                          
+  193  193                          mode0:              ; waiting for waveform selection
+  194  194   0000BC B6xx xx           ldaa KEY_BUF        ;test if keybuf is 0-4
+  195  195   0000BF 8130              cmpa #$30           ;\0/
+  196  196   0000C1 1827 001C         lbeq ws0            ;\ / jump to select wave
+  197  197   0000C5 8131              cmpa #$31           ;\1/
+  198  198   0000C7 1827 0022         lbeq ws1            ;\ / jump to select wave
+  199  199   0000CB 8132              cmpa #$32           ;\2/
+  200  200   0000CD 1827 0028         lbeq ws2            ;\ / jump to select wave
+  201  201   0000D1 8133              cmpa #$33           ;\3/
+  202  202   0000D3 1827 002E         lbeq ws3            ;\ / jump to select wave
+  203  203   0000D7 8134              cmpa #$34           ;\4/
+  204  204   0000D9 1827 0034         lbeq ws4            ;\ / jump to select wave
+  205  205   0000DD 1820 00F4         lbra exit_MM
+  206  206                            
+  207  207                              ws0:  ;selects waveform 0 (no wave selected)
+  208  208   0000E1 180B 00xx             movb #$00, DWAVE      ;change display ITCV to wave 0
+             0000E5 xx         
+  209  209   0000E6 180B 00xx             movb #$00, MODE       ;change mode to wait for another waveform selection
+             0000EA xx         
+  210  210   0000EB 2030                  bra wsexit
+  211  211                              ws1:    ;selects waveform 1 (SAW) 
+  212  212   0000ED 180B 01xx             movb #$01, DWAVE ;change display ITCV to wave 1
+             0000F1 xx         
+  213  213   0000F2 180B 01xx             movb #$01, MODE  ;change mode to wait for nint
+             0000F6 xx         
+  214  214   0000F7 2024                  bra wsexit 
+  215  215                              ws2:    ;selects waveform 2 (7SINE)
+  216  216   0000F9 180B 02xx             movb #$02, DWAVE ;change display ITCV to wave 2
+             0000FD xx         
+  217  217   0000FE 180B 01xx             movb #$01, MODE  ;change mode to wait for nint
+             000102 xx         
+  218  218   000103 2018                  bra wsexit 
+  219  219                              ws3:    ;selects waveform 3 (SQUARE)
+  220  220   000105 180B 03xx             movb #$03, DWAVE ;change display ITCV to wave 3
+             000109 xx         
+  221  221   00010A 180B 01xx             movb #$01, MODE  ;change mode to wait for nint
+             00010E xx         
+  222  222   00010F 200C                  bra wsexit
+  223  223                              ws4:    ;selects waveform 4 (15SINE)
+  224  224   000111 180B 04xx             movb #$04, DWAVE ;change display ITCV to wave 4
+             000115 xx         
+  225  225   000116 180B 01xx             movb #$01, MODE  ;change mode to wait for nint
+             00011A xx         
+  226  226   00011B 2000                  bra wsexit
+  227  227                              wsexit: ;exits wave selection
+  228  228   00011D 180B 01xx             movb #$01, DWLINE     ;ITCV for displaying wave line
+             000121 xx         
+  229  229   000122 79xx xx               clr KEY_FLG
+  230  230   000125 3D                    rts
+  231  231                          mode1:              ;waiting for nint
+  232  232   000126 F6xx xx           ldab KEY_BUF
+  233  233   000129 C108                cmpb #$08 
+  234  234   00012B 1827 0013           lbeq bs        ;if key is BS then go to BS state 
+  235  235   00012F C10A                cmpb #$0A 
+  236  236   000131 1827 0013           lbeq ent       ;if key is ENTER then go to ENTER state
+  237  237   000135 C109                cmpb #$09
+  238  238   000137 182C 0001           lbge dh
+  239  239   00013B 3D                  rts
+  240  240                         
+  241  241                                dh:
+  242  242   00013C 180B 02xx               movb #$02, MMSTATE     ;if just a number go to Digit Handler
+             000140 xx         
+  243  243   000141 3D                      rts
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  244  244                                bs:
+  245  245   000142 180B 03xx               movb #$03, MMSTATE     ;go to BS state
+             000146 xx         
+  246  246   000147 3D                      rts
+  247  247                                ent:
+  248  248   000148 180B 04xx               movb #$04, MMSTATE    ;go to ENT state
+             00014C xx         
+  249  249   00014D 3D                      rts
+  250  250                              
+  251  251                       
+  252  252                        MMState2:   ;DIGIT HANDLER 
+  253  253   00014E B6xx xx       ldaa COUNT              ;loads and compares count to 3
+  254  254   000151 8103          cmpa #$03
+  255  255   000153 1827 007E       lbeq exit_MM          ;if 3 digits have been entered, just exit 
+  256  256   000157 180B 01xx     movb #$01, DECHO      ;set DECHO to 1 to branch to echo in display
+             00015B xx         
+  257  257   00015C CExx xx       ldx #BUFFER           ;loads X with address of BUFFER
+  258  258   00015F F6xx xx       ldab KEY_BUF          ;loads B with the contents of the key pressed
+  259  259   000162 6BE4          stab A,X              ;stores X index of A with B
+  260  260   000164 72xx xx       inc COUNT             ;increments COUNT
+  261  261   000167 206C          bra exit_MM
+  262  262                       
+  263  263                        MMState3:   ;BACKSPACE
+  264  264   000169 F7xx xx       tst COUNT             ;test is COUNT is 0
+  265  265                          ;if COUNT=0 don't BS
+  266  266   00016C 1827 0065       lbeq exit_MM          
+  267  267                          ;if COUNT != 0, BS
+  268  268   000170 73xx xx         dec COUNT             ;Decrement COUNT
+  269  269   000173 B6xx xx         ldaa COUNT            ;Load COUNT into acc A
+  270  270   000176 CExx xx         ldx #BUFFER           ;load X with address of BUFFER
+  271  271   000179 1808 E400       movb #$00,A,X         ;change the current BUFFER location to $00
+  272  272   00017D 180B 01xx       movb #$01, DBS        ;Set ITCV to 1 for BS
+             000181 xx         
+  273  273   000182 2051            bra exit_MM
+  274  274                          
+  275  275                        MMState4:   ;ENTER
+  276  276   000184 8635          ldaa #$35             ;Set address of Cursor to first entry                
+  277  277   000186 16xx xx       jsr SETADDR 
+  278  278   000189 F7xx xx       tst COUNT
+  279  279   00018C 273D          beq e3             
+  280  280   00018E 16xx xx       jsr CONVERT           ;converts buffer
+  281  281   000191 8101            cmpa #$01             ;compares error code to 1  
+  282  282   000193 2722              beq e1              ;if true: jumps to error 1
+  283  283   000195 8102            cmpa #$02             ;compares error code to 2
+  284  284   000197 2728              beq e2              ;if true: jumps to error 2 
+  285  285   000199 B754            tfr X,D
+  286  286   00019B 7Bxx xx         stab NINT              ;if no errors, load the period value into NINT
+  287  287   00019E 79xx xx         clr COUNT
+  288  288   0001A1 180B 02xx       movb #$02, MODE       ;goes back to waveform select state
+             0001A5 xx         
+  289  289   0001A6 180B 01xx       movb #$01, NEWBTI
+             0001AA xx         
+  290  290   0001AB 180B 01xx       movb #$01, NEWWAVE
+             0001AF xx         
+  291  291   0001B0 180B 01xx       movb #$01, NINTG
+             0001B4 xx         
+  292  292   0001B5 201E            bra exit_MM           ;leaves ENTER state
+  293  293                       
+  294  294                            e1:                 ;if it is error 1
+  295  295   0001B7 180B 01xx           movb #$01, ERROR     ;set ERROR to 1
+             0001BB xx         
+  296  296   0001BC 79xx xx             clr COUNT
+  297  297   0001BF 2014                bra exit_MM            ;go to exit
+  298  298                            e2:                 ;if it is error 2
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  299  299   0001C1 180B 02xx           movb #$02, ERROR     ;set ERROR to 2
+             0001C5 xx         
+  300  300   0001C6 79xx xx             clr COUNT
+  301  301   0001C9 200A                bra exit_MM           ;go to exit
+  302  302                            e3:                 ;if it is error 3
+  303  303   0001CB 180B 03xx           movb #$03, ERROR     ;set ERROR to 3
+             0001CF xx         
+  304  304   0001D0 79xx xx             clr COUNT
+  305  305   0001D3 2000                bra exit_MM           ;go to exit  
+  306  306                      
+  307  307                        exit_MM:
+  308  308   0001D5 180B 01xx     movb #$01, MMSTATE          ;go to HUB state
+             0001D9 xx         
+  309  309   0001DA 79xx xx       clr KEY_FLG
+  310  310   0001DD 3D            rts 
+  311  311                      
+  312  312                      
+  313  313                      ;//////////////////////////KEYPAD//////////////////////////
+  314  314                      KEYPAD: ;Keypad tests if a key has been pressed, filters it, sets a key flag high, 
+  315  315                              ;and loads it into a buffer for mastermind to use
+  316  316   0001DE B6xx xx      ldaa KPSTATE ; get current t2state and branch accordingly
+  317  317   0001E1 2707         beq KPState0
+  318  318   0001E3 43           deca
+  319  319   0001E4 270D         beq KPState1
+  320  320   0001E6 43           deca
+  321  321   0001E7 271A         beq KPState2
+  322  322   0001E9 3D           rts
+  323  323                       
+  324  324                       KPState0:    ;INIT
+  325  325   0001EA 16xx xx       jsr INITKEY         ;initializes keyboard
+  326  326   0001ED 180B 01xx     movb #$01, KPSTATE  ;goes to test state
+             0001F1 xx         
+  327  327   0001F2 3D            rts
+  328  328                       KPState1:    ;TEST
+  329  329   0001F3 F7xx xx       tst PREQ            
+  330  330   0001F6 261C          bne exit_KP
+  331  331   0001F8 F7xx xx       tst LKEY_FLG        ;checks if key has been pressed
+  332  332   0001FB 2717          beq exit_KP         ;exits if none
+  333  333   0001FD 180B 02xx     movb #$02, KPSTATE  ;goes to store key state if one has been
+             000201 xx         
+  334  334   000202 3D            rts  
+  335  335                       KPState2:    ;STORE
+  336  336   000203 16xx xx       jsr GETCHAR         ;character placed in acc b
+  337  337   000206 C139          cmpb #$39           ;checks if character is 0-9
+  338  338   000208 2E0A          bgt exit_KP
+  339  339   00020A 7Bxx xx       stab KEY_BUF        ;character stores into KEY_BUF
+  340  340   00020D 180B 01xx     movb #$01, KEY_FLG  ;sets key flag to high
+             000211 xx         
+  341  341   000212 2000          bra exit_KP
+  342  342                       exit_KP:     ;EXIT
+  343  343   000214 180B 01xx     movb #$01, KPSTATE  ;go back to state 1
+             000218 xx         
+  344  344   000219 3D            rts
+  345  345                      ;//////////////////////////DISPLAY//////////////////////////
+  346  346                      DISPLAY:
+  347  347   00021A B6xx xx       ldaa DPSTATE
+  348  348   00021D 8100          cmpa #$00
+  349  349   00021F 1827 001A     lbeq DPState0       ;initialize - splash first line
+  350  350   000223 43            deca
+  351  351   000224 1827 0021     lbeq DPState1       ;splash line 1
+  352  352   000228 43            deca 
+  353  353   000229 1827 004E     lbeq DPState2       ;hub
+  354  354   00022D 43            deca 
+  355  355   00022E 1827 00E0     lbeq DPState3       ;echo
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  356  356   000232 43            deca 
+  357  357   000233 1827 00F4     lbeq DPState4       ;backspace
+  358  358   000237 43            deca 
+  359  359   000238 1827 010C     lbeq DPState5       ;error
+  360  360   00023C 3D            rts
+  361  361                        
+  362  362                        DPState0:   ;INIT
+  363  363   00023D 16xx xx          jsr INITLCD          ;initialize the LCD 
+  364  364   000240 16xx xx          jsr CURSOR_ON        ;turn on cursor
+  365  365   000243 180B 01xx        movb #$01, DPSTATE   ;go to splash state
+             000247 xx         
+  366  366   000248 3D               rts
+  367  367                        DPState1:   ;SPLASH
+  368  368   000249 F7xx xx         tst SPLASH            ;test if line 1 has been splashed
+  369  369   00024C 1827 0004       lbeq splash1          ;go to splashing line 1 
+  370  370   000250 1826 0016       lbne splash2
+  371  371                          splash1:
+  372  372   000254 CExx xx           ldx #L1               ;load what message's address we want
+  373  373   000257 7Exx xx           stx MES               ;save that into an intertask variable that printing will look for
+  374  374   00025A 180B 00xx         movb #$00, ADDR       ;save that into LCD address holder
+             00025E xx         
+  375  375   00025F 180B 01xx         movb #$01, PREQ       ;sets the print request flag high
+             000263 xx         
+  376  376   000264 180B 01xx         movb #$01, SPLASH     ;goes to next state
+             000268 xx         
+  377  377   000269 3D                rts
+  378  378                          splash2:                ;stays in state till print request is low (message done printing)
+  379  379   00026A F7xx xx           tst PREQ                ;loads print request and checks if it is done
+  380  380   00026D 2701              beq splashe             ;goes to exit if done
+  381  381   00026F 3D                rts 
+  382  382                          splashe:
+  383  383   000270 180B 02xx         movb #$02, DPSTATE    ;go to hub state
+             000274 xx         
+  384  384   000275 180B 00xx         movb #$00, SPLASH     ;turn of splash flag
+             000279 xx         
+  385  385   00027A 3D                rts 
+  386  386                        DPState2:   ;HUB
+  387  387   00027B F7xx xx         tst DWLINE            ;test which line to test ITCVs for
+  388  388   00027E 1826 0005       lbne wsel             ;wave select 
+  389  389   000282 1827 006A       lbeq ktst             ;key test
+  390  390   000286 3D              rts
+  391  391                          wsel:
+  392  392   000287 B6xx xx           ldaa DWAVE            ;test DWAVE to see what wave is selected
+  393  393   00028A 8100              cmpa #$00
+  394  394   00028C 1827 001C         lbeq w0               ;wave 0 
+  395  395   000290 8101              cmpa #$01
+  396  396   000292 1827 001B         lbeq w1               ;wave 1
+  397  397   000296 8102              cmpa #$02
+  398  398   000298 1827 001A         lbeq w2               ;wave 2 
+  399  399   00029C 8103              cmpa #$03
+  400  400   00029E 1827 0019         lbeq w3               ;wave 3
+  401  401   0002A2 8104              cmpa #$04
+  402  402   0002A4 1827 0018         lbeq w4               ;wave 4
+  403  403   0002A8 79xx xx           clr DWAVE             ;clears DWAVE ITCV
+  404  404   0002AB 3D                rts
+  405  405                            
+  406  406                            w0: ;wave 0
+  407  407   0002AC CExx xx             ldx #L2CLEAR          ;load what message's address we want
+  408  408   0002AF 202C                bra w0exit
+  409  409                                
+  410  410                            w1: ;wave 1
+  411  411   0002B1 CExx xx             ldx #L2SAW          ;load what message's address we want
+  412  412   0002B4 200F                bra wexit 
+  413  413                            w2: ;wave 2
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  414  414   0002B6 CExx xx             ldx #L27SINE          ;load what message's address we want
+  415  415   0002B9 200A                bra wexit 
+  416  416                            w3: ;wave 3
+  417  417   0002BB CExx xx             ldx #L2SQUARE          ;load what message's address we want
+  418  418   0002BE 2005                bra wexit 
+  419  419                            w4: ;wave 4
+  420  420   0002C0 CExx xx             ldx #L215SINE          ;load what message's address we want
+  421  421   0002C3 2000                bra wexit
+  422  422                                    
+  423  423                            wexit:  ;exit waves
+  424  424   0002C5 7Exx xx             stx MES               ;save that into an intertask variable that printing will look for
+  425  425   0002C8 180B 40xx           movb #$40, ADDR       ;save that into " "
+             0002CC xx         
+  426  426   0002CD 180B 01xx           movb #$01, PREQ       ;flag print request
+             0002D1 xx         
+  427  427   0002D2 180B 00xx           movb #$00, DWLINE     ;go to ktst next time through
+             0002D6 xx         
+  428  428   0002D7 180B 01xx           movb #$01, L2CURSOR   ;enables the cursor on line 2
+             0002DB xx         
+  429  429   0002DC 3D                  rts  
+  430  430                            w0exit: ;exit 0 wave
+  431  431   0002DD 7Exx xx             stx MES               ;save that into an intertask variable that printing will look for
+  432  432   0002E0 180B 40xx           movb #$40, ADDR       ;save that into " "
+             0002E4 xx         
+  433  433   0002E5 180B 01xx           movb #$01, PREQ       ;flag print request
+             0002E9 xx         
+  434  434   0002EA 180B 00xx           movb #$00, DWLINE     ;go to ktst next time through
+             0002EE xx         
+  435  435   0002EF 3D                  rts
+  436  436                          ktst:   
+  437  437   0002F0 F7xx xx           tst DECHO             ;test if mastermind says to echo
+  438  438   0002F3 260B                bne Decho  ;if DECHO = 1, branch to Decho to set DPSTATE to ECHO state
+  439  439   0002F5 F7xx xx           tst DBS               ;test if mastermind says to backspace
+  440  440   0002F8 260C                bne Dbs    ;if DBS = 1, branch to Dbs to set DPSTATE to BS state
+  441  441   0002FA F7xx xx           tst ERROR             ;test if Error is 1
+  442  442   0002FD 260D                bne De
+  443  443   0002FF 3D                rts
+  444  444                            Decho:  ;go to echo state
+  445  445   000300 180B 03xx           movb #$03, DPSTATE 
+             000304 xx         
+  446  446   000305 3D                  rts
+  447  447                            Dbs:    ;go to backspace state
+  448  448   000306 180B 04xx           movb #$04, DPSTATE 
+             00030A xx         
+  449  449   00030B 3D                  rts
+  450  450                            De:     ;go to error state
+  451  451   00030C 180B 05xx           movb #$05, DPSTATE
+             000310 xx         
+  452  452   000311 3D                  rts
+  453  453                      
+  454  454                        DPState3:   ;ECHO              
+  455  455   000312 865A            ldaa #$5A             ;echo on LCD addr. Line 2: 27 + COUNT    
+  456  456   000314 BBxx xx         adda COUNT            
+  457  457   000317 16xx xx         jsr SETADDR           ;sets the cursor to next location      
+  458  458   00031A F6xx xx         ldab KEY_BUF          ;load current Key
+  459  459   00031D 16xx xx         jsr OUTCHAR_AT        ;print character at right location
+  460  460   000320 180B 00xx       movb #$00, DECHO      ;turn echo ITCV off
+             000324 xx         
+  461  461   000325 180B 02xx       movb #$02, DPSTATE    ;go to HUB state
+             000329 xx         
+  462  462   00032A 3D              rts
+  463  463                        DPState4:   ;BACKSPACE
+  464  464   00032B 865B            ldaa #$5B             ;backspace on LCD addr. 28 + COUNT
+  465  465   00032D BBxx xx         adda COUNT            ;\/
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  466  466   000330 C620            ldab #$20             ;\/
+  467  467   000332 16xx xx         jsr OUTCHAR_AT        ;\/ print a blank char.
+  468  468   000335 865B            ldaa #$5B             ;move cursor on LCD addr. 28 + COUNT
+  469  469   000337 BBxx xx         adda COUNT            ;\/
+  470  470   00033A 16xx xx         jsr SETADDR           ;\/
+  471  471   00033D 180B 00xx       movb #$00, DBS        ;turn off backspace ITCV 
+             000341 xx         
+  472  472   000342 180B 02xx       movb #$02, DPSTATE    ;go to HUB state
+             000346 xx         
+  473  473   000347 3D              rts
+  474  474                        DPState5:   ;ERROR 
+  475  475   000348 F7xx xx         tst ERRORCOUNT        ;tests for error permanance
+  476  476   00034B 1826 008C       lbne DPec
+  477  477   00034F B6xx xx         ldaa ERROR            ;loads ERROR 1 to check which error message for line 1 it is
+  478  478   000352 8101            cmpa #$01
+  479  479   000354 1827 000C       lbeq DPe1ps           ;if ERROR = 1, go to print error message 1
+  480  480   000358 8102            cmpa #$02
+  481  481   00035A 1827 0025       lbeq DPe2ps           ;if ERROR = 2, go to print error message 2
+  482  482   00035E 8103            cmpa #$03
+  483  483   000360 1827 003E       lbeq DPe3ps           ;if ERROR = 3, go to print error message 3  
+  484  484                      
+  485  485                          DPe1ps:   ;print logic for error message 1 (magnitude is too large)      
+  486  486   000364 B6xx xx           ldaa DPe1p            ;loads the sub-state counter
+  487  487   000367 2704              beq DPe1pa            ;starts message
+  488  488   000369 43                deca
+  489  489   00036A 2755              beq DPepb             ;finishes message
+  490  490   00036C 3D                rts 
+  491  491                              DPe1pa:   ;sets up the request to start message
+  492  492   00036D CExx xx               ldx #LARGE          ;load message address
+  493  493   000370 7Exx xx               stx MES           ;stores message address
+  494  494   000373 180B 55xx             movb #$55, ADDR    ;stores start of message location
+             000377 xx         
+  495  495   000378 180B 01xx             movb #$01, PREQ    ;sets a print request to high
+             00037C xx         
+  496  496   00037D 180B 01xx             movb #$01, DPe1p  ;moves t3e1l1 logic to next state
+             000381 xx         
+  497  497   000382 3D                    rts
+  498  498                          DPe2ps:   ;print logic for error message 2 (magnitude is too large)      
+  499  499   000383 B6xx xx           ldaa DPe2p    ;loads the sub-state counter
+  500  500   000386 2704              beq DPe2pa    ;starts message
+  501  501   000388 43                deca
+  502  502   000389 2736              beq DPepb    ;finishes message
+  503  503   00038B 3D                rts 
+  504  504                              DPe2pa:     ;sets up the request to start message
+  505  505   00038C CExx xx               ldx #ZERO         ;load message address
+  506  506   00038F 7Exx xx               stx MES           ;stores message address
+  507  507   000392 180B 55xx             movb #$55, ADDR   ;stores start of message location
+             000396 xx         
+  508  508   000397 180B 01xx             movb #$01, PREQ   ;sets a print request to high
+             00039B xx         
+  509  509   00039C 180B 01xx             movb #$01, DPe2p  ;moves t3e1l1 logic to next state
+             0003A0 xx         
+  510  510   0003A1 3D                    rts
+  511  511                          DPe3ps:   ;print logic for error message 1 (magnitude is too large)      
+  512  512   0003A2 B6xx xx           ldaa DPe3p    ;loads the sub-state counter
+  513  513   0003A5 2704              beq DPe3pa    ;starts message
+  514  514   0003A7 43                deca
+  515  515   0003A8 2717              beq DPepb     ;finishes message
+  516  516   0003AA 3D                rts 
+  517  517                              DPe3pa:     ;sets up the request to start message
+  518  518   0003AB CExx xx               ldx #NADA         ;load message address
+  519  519   0003AE 7Exx xx               stx MES           ;stores message address
+  520  520   0003B1 180B 55xx             movb #$55, ADDR   ;stores start of message location
+             0003B5 xx         
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  521  521   0003B6 180B 01xx             movb #$01, PREQ   ;sets a print request to high
+             0003BA xx         
+  522  522   0003BB 180B 01xx             movb #$01, DPe3p  ;moves t3e1l1 logic to next state
+             0003BF xx         
+  523  523   0003C0 3D                    rts
+  524  524                          DPepb:    ;prints until print request is done
+  525  525   0003C1 B6xx xx           ldaa PREQ             ;loads and tests PRINTREQ to see if printing is done
+  526  526   0003C4 97                tsta 
+  527  527   0003C5 2701              beq DPe1pe          
+  528  528   0003C7 3D                rts   
+  529  529                          DPe1pe:   ;exit error message state once done printing    
+  530  530   0003C8 79xx xx           clr DPe1p             ;clears all substate variables
+  531  531   0003CB 79xx xx           clr DPe2p
+  532  532   0003CE 79xx xx           clr DPe3p
+  533  533   0003D1 79xx xx           clr ERROR             ;clears error ITCV
+  534  534   0003D4 1803 FFFF         movw #$FFFF, ERRORCOUNT   ;starts the error message permanance delay
+             0003D8 xxxx       
+  535  535   0003DA 3D                rts
+  536  536                          DPec:         ;ERROR COUNT DELAY TIMER
+  537  537   0003DB 1873 xxxx           decw ERRORCOUNT
+  538  538   0003DF F7xx xx             tst ERRORCOUNT
+  539  539   0003E2 2701                beq DPecexit
+  540  540   0003E4 3D                  rts
+  541  541                              DPecexit:
+  542  542   0003E5 180B 02xx             movb #$02, DPSTATE  ;go to the error message permanance delay
+             0003E9 xx         
+  543  543   0003EA 180B 01xx             movb #$01, DWLINE
+             0003EE xx         
+  544  544   0003EF 1879 xxxx             clrw ERRORCOUNT
+  545  545   0003F3 3D                    rts 
+  546  546                      ;//////////////////////////TC0//////////////////////////
+  547  547                      TC0:
+  548  548   0003F4 B6xx xx       ldaa TCSTATE
+  549  549   0003F7 8100          cmpa #$00
+  550  550   0003F9 2707          beq TCState0
+  551  551   0003FB 43            deca
+  552  552   0003FC 2728          beq TCState1
+  553  553   0003FE 43            deca 
+  554  554   0003FF 2738          beq TCState2
+  555  555   000401 3D            rts
+  556  556                      
+  557  557                        TCState0:    ; Initialize - Set up all interrupts like HW4
+  558  558   000402 10EF            cli                         ;allows interupts
+  559  559   000404 4C40 01         bset  TIOS,   #C0           ;sets TIOS to C0
+  560  560   000407 4C49 01         bset  TCTL2,  #CROA_TOGGLE  ;sets TCTL2 to CROA_TOGGLE
+  561  561   00040A 4C4E 01         bset  TFLG1,  #C0F_CLEAR    ;sets TFLG1 to #C0F_CLEAR
+  562  562   00040D 4C4C 01         bset  TIE,    #C0I_SET      ;sets TIE to #C0I_SET
+  563  563   000410 4C46 A0         bset  TSCR1,  #TEN_TSFRZ_SET;sets TSCR1 to TEN_TSFRZ_SET
+  564  564   000413 DC44            ldd   TCNT                  ;loads acc. D with TCNT
+  565  565   000415 C303 E8         addd  #INTERVAL             ;adds INTERVAL to D
+  566  566   000418 5C50            std   TC0H                  ;stores D into TC0H (THIS IS THE NEW TIME SET)
+  567  567   00041A 180B 01xx       movb #$01, TCSTATE
+             00041E xx         
+  568  568   00041F 4D4C 01         bclr TIE, C0I_SET             ;disable timer overflow flag to trigger input
+  569  569   000422 4D49 01         bclr TCTL2,CROA_TOGGLE               ;stop toggle output
+  570  570   000425 3D              rts
+  571  571                          
+  572  572                        TCState1:    ; Halted until Run (Mode 2)
+  573  573   000426 B6xx xx         ldaa MODE                   ;If Mode = 2 (Running), enable interupts
+  574  574   000429 8102            cmpa #$02
+  575  575   00042B 261F            bne exit_TC
+  576  576   00042D 180B 02xx       movb #02, TCSTATE           ;go to TCState2
+             000431 xx         
+  577  577   000432 4C4C 01         bset TIE, C0I_SET             ;enable timer overflow flag to trigger input
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  578  578   000435 4C49 01         bset TCTL2, CROA_TOGGLE              ;set output to toggle
+  579  579   000438 3D              rts  
+  580  580                      
+  581  581                        TCState2:    ; Running until Halted (Mode != 2)
+  582  582   000439 B6xx xx         ldaa MODE                   ;If Mode != 2 (Not Running), disable interupts
+  583  583   00043C 8102            cmpa #$02
+  584  584   00043E 270C            beq exit_TC
+  585  585   000440 180B 01xx       movb #01, TCSTATE           ;go to TCState1
+             000444 xx         
+  586  586   000445 4D4C 01         bclr TIE, C0I_SET             ;disable timer overflow flag to trigger input
+  587  587   000448 4D49 01         bclr TCTL2,CROA_TOGGLE               ;stop toggle output
+  588  588   00044B 3D              rts
+  589  589                          
+  590  590                          exit_TC:
+  591  591   00044C 3D              rts
+  592  592                        
+  593  593                      ;//////////////////////////FUNCTION GENERATOR//////////////////////////
+  594  594                      FUNCTIONGENERATOR:
+  595  595   00044D B6xx xx       ldaa FGSTATE
+  596  596   000450 8100          cmpa #$00
+  597  597   000452 1827 0019     lbeq FGState0 
+  598  598   000456 8101          cmpa #$01
+  599  599   000458 1827 0020     lbeq FGState1
+  600  600   00045C 8102          cmpa #$02
+  601  601   00045E 1827 006B     lbeq FGState2
+  602  602   000462 8103          cmpa #$03
+  603  603   000464 1827 0090     lbeq FGState3
+  604  604   000468 8104          cmpa #$04
+  605  605   00046A 1827 00A8     lbeq FGState4
+  606  606   00046E 3D            rts
+  607  607                        
+  608  608                        FGState0: ;INIT
+  609  609   00046F F7xx xx         tst NEWWAVE
+  610  610   000472 1827 009F       lbeq s4e
+  611  611   000476 180B 01xx       movb #$01, FGSTATE
+             00047A xx         
+  612  612   00047B 3D              rts
+  613  613                      
+  614  614                        FGState1: ;WAITING FOR WAVE
+  615  615   00047C F7xx xx         tst DWAVE
+  616  616   00047F 1827 00DC         lbeq FGexit
+  617  617   000483 B6xx xx         ldaa DWAVE
+  618  618   000486 8101            cmpa #$01
+  619  619   000488 1827 0013       lbeq wave1
+  620  620   00048C 8102            cmpa #$02
+  621  621   00048E 1827 0017       lbeq wave2
+  622  622   000492 8103            cmpa #$03
+  623  623   000494 1827 001B       lbeq wave3
+  624  624   000498 8104            cmpa #$04
+  625  625   00049A 1827 001F       lbeq wave4
+  626  626   00049E 3D              rts
+  627  627                          
+  628  628                          wave1: ;select waveform 1 (SAW)
+  629  629   00049F CExx xx           ldx  #SAW
+  630  630   0004A2 7Exx xx           stx WAVEPTR
+  631  631   0004A5 1820 001E         lbra wave_exit
+  632  632                          wave2: ;select waveform 2 (7SINE)
+  633  633   0004A9 CExx xx           ldx  #SINE7
+  634  634   0004AC 7Exx xx           stx WAVEPTR
+  635  635   0004AF 1820 0014         lbra wave_exit
+  636  636                          wave3: ;select waveform 3 (SQUARE)
+  637  637   0004B3 CExx xx           ldx #SQUARE
+  638  638   0004B6 7Exx xx           stx WAVEPTR
+  639  639   0004B9 1820 000A         lbra wave_exit
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  640  640                          wave4: ;select waveform 4 (15SINE)
+  641  641   0004BD CExx xx           ldx #SINE15
+  642  642   0004C0 7Exx xx           stx WAVEPTR
+  643  643   0004C3 1820 0000         lbra wave_exit
+  644  644                          wave_exit:  
+  645  645   0004C7 180B 02xx         movb #$02, FGSTATE
+             0004CB xx         
+  646  646   0004CC 3D                rts
+  647  647                      
+  648  648                        FGState2: ;NEW WAVE
+  649  649   0004CD FExx xx         ldx   WAVEPTR     ;point to start of data for wave
+  650  650   0004D0 180D 00xx       movb  0,X,CSEG    ;get number of wave segments
+             0004D4 xx         
+  651  651   0004D5 1805 01xx       movw  1,X,VALUE   ;get initial value for DAC
+             0004D9 xx         
+  652  652   0004DA 180D 03xx       movb  3,X,LSEG    ;load segment length
+             0004DE xx         
+  653  653   0004DF 1805 04xx       movw  4,X,SEGINC  ;load segment increment
+             0004E3 xx         
+  654  654   0004E4 08              inx
+  655  655   0004E5 08              inx
+  656  656   0004E6 08              inx
+  657  657   0004E7 08              inx
+  658  658   0004E8 08              inx
+  659  659   0004E9 08              inx
+  660  660   0004EA 7Exx xx         stx   SEGPTR      ;store incremented SEGPTR for next segment
+  661  661   0004ED 180B 01xx       movb  #$01,DPRMPT ;set flag for display of NINT prompt
+             0004F1 xx         
+  662  662   0004F2 180B 03xx       movb  #$03,FGSTATE;set next state
+             0004F6 xx         
+  663  663   0004F7 3D              rts
+  664  664                        
+  665  665                        FGState3: ;CHECK NINT
+  666  666   0004F8 F7xx xx         tst NINTG
+  667  667   0004FB 2718            beq s4e
+  668  668   0004FD 180B 00xx       movb #$00, NEWWAVE
+             000501 xx         
+  669  669   000502 180B 00xx       movb #$00, NINTG
+             000506 xx         
+  670  670   000507 180B 04xx       movb #$04, FGSTATE
+             00050B xx         
+  671  671   00050C B6xx xx         ldaa LSEG
+  672  672   00050F 8B01            adda #$01
+  673  673   000511 7Axx xx         staa LSEG
+  674  674   000514 3D              rts
+  675  675                          
+  676  676   000515 3D              s4e: rts
+  677  677                             
+  678  678                        FGState4: ;DISPLAY WAVE
+  679  679   000516 F7xx xx         tst NEWWAVE
+  680  680   000519 263B            bne fgs4c
+  681  681   00051B F7xx xx         tst NEWBTI
+  682  682   00051E 273E            beq fgs4e
+  683  683   000520 73xx xx         dec   LSEG        ;decrement segment length counter
+  684  684   000523 2626              bne   fgs4b     ;if not at end, simply update DAC output
+  685  685   000525 73xx xx         dec   CSEG        ;if at end, decrement segment counter
+  686  686   000528 260E              bne   fgs4a     ;if not last segment, skip reinit of wave
+  687  687   00052A FExx xx         ldx   WAVEPTR     ;point to start of data for wave
+  688  688   00052D 180D 00xx       movb  0,X,CSEG    ;get number of wave segments
+             000531 xx         
+  689  689   000532 08              inx               ;inc SEGPTR to start of first segment
+  690  690   000533 08              inx
+  691  691   000534 08              inx
+  692  692   000535 7Exx xx         stx   SEGPTR      ;store incremented SEGPTR
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  693  693                          fgs4a:            
+  694  694   000538 FExx xx           ldx   SEGPTR      ;point to start of new segment
+  695  695   00053B 180D 00xx         movb  0,X,LSEG    ;initialize segment length counter
+             00053F xx         
+  696  696   000540 1805 01xx         movw  1,X,SEGINC  ;load segment increment
+             000544 xx         
+  697  697   000545 08                inx               ;inc SEGPTR to next segment
+  698  698   000546 08                inx
+  699  699   000547 08                inx
+  700  700   000548 7Exx xx           stx   SEGPTR      ;store incremented SEGPTR
+  701  701                          fgs4b:              
+  702  702   00054B FCxx xx           ldd   VALUE       ;get current DAC input value
+  703  703   00054E F3xx xx           addd  SEGINC      ;add SEGINC to current DAC input value
+  704  704   000551 7Cxx xx           std   VALUE       ;store incremented DAC input value
+  705  705   000554 2005              bra   fgs4d  
+  706  706   000556 180B 01xx       fgs4c: movb #$01, FGSTATE   ;set next state   
+             00055A xx         
+  707  707   00055B 79xx xx         fgs4d: clr  NEWBTI
+  708  708   00055E 3D              fgs4e: rts
+  709  709                            
+  710  710                         FGexit:
+  711  711   00055F 3D                rts
+  712  712                      
+  713  713                      ;//////////////////////////PRINTREQUEST//////////////////////////     
+  714  714                      PRINTREQUEST:
+  715  715   000560 B6xx xx       ldaa PRSTATE
+  716  716   000563 8100          cmpa #$00
+  717  717   000565 1827 0013     lbeq PRState0 
+  718  718   000569 8101          cmpa #$01
+  719  719   00056B 1827 0013     lbeq PRState1
+  720  720   00056F 8102          cmpa #$02
+  721  721   000571 1827 0018     lbeq PRState2
+  722  722   000575 8103          cmpa #$03
+  723  723   000577 1827 0024     lbeq PRState3
+  724  724   00057B 3D            rts
+  725  725                        
+  726  726                        PRState0: ;INIT
+  727  727   00057C 180B 01xx       movb #$01, PRSTATE ; set next state
+             000580 xx         
+  728  728   000581 3D              rts
+  729  729                      
+  730  730                        PRState1: ;TEST PRINT REQUEST
+  731  731   000582 F7xx xx         tst PREQ            ;if a request is made to print a message go to t9state2
+  732  732   000585 2745            beq PRexit
+  733  733   000587 180B 02xx       movb #$02, PRSTATE
+             00058B xx         
+  734  734   00058C 3D              rts
+  735  735                       
+  736  736                        PRState2: ;PRINT FIRST CHARACTER
+  737  737   00058D FExx xx         ldx MES             ;load message address
+  738  738   000590 7Exx xx         stx DPTR            ;store message address in DPTR
+  739  739   000593 B6xx xx         ldaa ADDR           ;load LCD address into acc. A
+  740  740   000596 16xx xx         jsr SETADDR
+  741  741   000599 180B 03xx       movb #$03, PRSTATE  ;go to loop state
+             00059D xx         
+  742  742   00059E 3D              rts
+  743  743                      
+  744  744                        PRState3: ;PRINT OTHER CHARACTERS
+  745  745   00059F FExx xx         ldx DPTR            ;loads message address
+  746  746   0005A2 E600            ldab 0,X            ;if current message is null then exit
+  747  747   0005A4 2708            beq PRexitDONE
+  748  748   0005A6 1872 xxxx       incw DPTR           ;otherwise increment DPTR
+  749  749   0005AA 16xx xx         jsr OUTCHAR         ;out a character at the LCD address
+  750  750   0005AD 3D              rts
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  751  751                        
+  752  752                          PRexitDONE:         ;exit state fo when done printing message
+  753  753   0005AE 180B 01xx         movb #$01, PRSTATE ;go back to hub print state
+             0005B2 xx         
+  754  754   0005B3 180B 00xx         movb #$00, PREQ    ;clear the print request to allow another message to print
+             0005B7 xx         
+  755  755   0005B8 8635              ldaa #$35
+  756  756   0005BA 16xx xx           jsr SETADDR
+  757  757   0005BD F7xx xx           tst L2CURSOR
+  758  758   0005C0 2601              bne PRec
+  759  759   0005C2 3D                rts
+  760  760                            PRec:
+  761  761   0005C3 79xx xx             clr L2CURSOR    ;clears the cursor for line 2 ITCV
+  762  762   0005C6 865B                ldaa #$5B       
+  763  763   0005C8 16xx xx             jsr SETADDR 
+  764  764   0005CB 3D                  rts
+  765  765                        
+  766  766                          PRexit:
+  767  767   0005CC 3D                rts
+  768  768                      
+  769  769                      ;/------------------------------------------------------------------------------------\
+  770  770                      ;| Subroutines                                                                        |
+  771  771                      ;\------------------------------------------------------------------------------------/
+  772  772                      CONVERT:  ;converts input
+  773  773   0005CD 37            pshb                           ; save B & Y 
+  774  774   0005CE 35            pshy 
+  775  775   0005CF 1B9F          des                            ; make room for three bytes on the stack 
+  776  776   0005D1 1B9F          des                            ;   [first byte serves as a counter] 
+  777  777   0005D3 1B9F          des                            ;   [last two bytes serve as RESULT] 
+  778  778   0005D5 6980          clr   0,SP                     ; zero these three bytes on the stack 
+  779  779   0005D7 1869 81       clrw  1,SP 
+  780  780   0005DA CExx xx       ldx   #BUFFER 
+  781  781                       
+  782  782                        conv_loop: 
+  783  783   0005DD A680            ldaa  0,SP 
+  784  784   0005DF E6E4            ldab  A,X 
+  785  785   0005E1 C030            subb  #'0' 
+  786  786   0005E3 87              clra       
+  787  787   0005E4 E381            addd  1,SP
+  788  788   0005E6 8C00 FF         cpd   #$FF
+  789  789   0005E9 2C20            bge   TOO_LARGE 
+  790  790   0005EB 6C81            std   1,SP 
+  791  791   0005ED 6280            inc   0,SP 
+  792  792   0005EF 73xx xx         dec   COUNT 
+  793  793   0005F2 270D            beq   conv_done 
+  794  794   0005F4 CD00 0A         ldy   #$000A 
+  795  795   0005F7 13              emul 
+  796  796   0005F8 8D00 00         cpy   #$0000 
+  797  797   0005FB 260E            bne   TOO_LARGE 
+  798  798   0005FD 6C81            std   1,SP 
+  799  799   0005FF 20DC            bra   conv_loop 
+  800  800                        conv_done: 
+  801  801   000601 8C00 00         cpd   #$0000 
+  802  802   000604 2709            beq   ZERO_MAG 
+  803  803   000606 B745            tfr   D,X 
+  804  804   000608 87              clra 
+  805  805   000609 2006            bra   exit_conversion 
+  806  806                        TOO_LARGE: 
+  807  807   00060B 8601            ldaa  #$01 
+  808  808   00060D 2002            bra   exit_conversion 
+  809  809                        ZERO_MAG: 
+  810  810   00060F 8602            ldaa  #$02 
+  811  811                        exit_conversion: 
+  812  812   000611 1B81            ins                            ; remove three bytes from stack 
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  813  813   000613 1B81            ins 
+  814  814   000615 1B81            ins 
+  815  815   000617 31              puly                           ; restore B & Y 
+  816  816   000618 33              pulb 
+  817  817   000619 3D              rts                            ; end subroutine ASCII_2_Bin 
+  818  818                      
+  819  819                      TC0ISR: ;function generator code               
+  820  820   00061A 73xx xx       dec   CINT                    ;BTI completion check
+  821  821   00061D 2611          bne   NOT_YET
+  822  822   00061F FCxx xx       ldd   VALUE                   ;get updated DAC_A input
+  823  823   000622 16xx xx       jsr   OUTDACA                 ;update DAC_A output
+  824  824   000625 180C xxxx     movb  NINT,CINT               ;reinitialize interupt counter for new BTI
+             000629 xxxx       
+  825  825   00062B 180B 01xx     movb  #$01,NEWBTI             ;set flag indicating beginning of a new BTI
+             00062F xx         
+  826  826                        
+  827  827                        NOT_YET:  ;reset timer for next interupt
+  828  828   000630 DC50            ldd   TC0H                  ;loads TC0H into acc. D
+  829  829   000632 C303 E8         addd  #INTERVAL             ;adds INTERVAL to D
+  830  830   000635 5C50            std   TC0H                  ;stores D into TC0H (THIS IS THE NEW TIME SET)
+  831  831   000637 4C4E 01         bset  TFLG1, C0F_CLEAR      ;sets TFLG1 to C0F_CLEAR
+  832  832   00063A F7xx xx         tst ERRORCOUNT
+  833  833   00063D 2601            bne ECDEC
+  834  834   00063F 0B              rti                         ;returns to interupt
+  835  835                          
+  836  836                          ECDEC:
+  837  837   000640 73xx xx           dec ERRORCOUNT
+  838  838   000643 0B                rti
+  839  839                          
+  840  840                      
+  841  841                      ;/------------------------------------------------------------------------------------\
+  842  842                      ;| ASCII Messages and Constant Data                                                   |
+  843  843                      ;\------------------------------------------------------------------------------------/
+  844  844                      ;MESSAGES
+  845  845   000644 2028 3129   L1:       DC.B ' (1)SAW  (2)7SINE  (3)SQUARE  (4)15SINE ',$00 
+             000648 5341 5720  
+             00064C 2028 3229  
+             000650 3753 494E  
+             000654 4520 2028  
+             000658 3329 5351  
+             00065C 5541 5245  
+             000660 2020 2834  
+             000664 2931 3553  
+             000668 494E 4520  
+             00066C 00         
+  846  846   00066D 5741 5645   L2SAW:    DC.B 'WAVE: SAW            NINT:     [1-->255]',$00
+             000671 3A20 5341  
+             000675 5720 2020  
+             000679 2020 2020  
+             00067D 2020 2020  
+             000681 204E 494E  
+             000685 543A 2020  
+             000689 2020 205B  
+             00068D 312D 2D3E  
+             000691 3235 355D  
+             000695 00         
+  847  847   000696 5741 5645   L27SINE:  DC.B 'WAVE: 7SINE          NINT:     [1-->255]',$00
+             00069A 3A20 3753  
+             00069E 494E 4520  
+             0006A2 2020 2020  
+             0006A6 2020 2020  
+             0006AA 204E 494E  
+             0006AE 543A 2020  
+             0006B2 2020 205B  
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+             0006B6 312D 2D3E  
+             0006BA 3235 355D  
+             0006BE 00         
+  848  848   0006BF 5741 5645   L2SQUARE: DC.B 'WAVE: SQUARE         NINT:     [1-->255]',$00
+             0006C3 3A20 5351  
+             0006C7 5541 5245  
+             0006CB 2020 2020  
+             0006CF 2020 2020  
+             0006D3 204E 494E  
+             0006D7 543A 2020  
+             0006DB 2020 205B  
+             0006DF 312D 2D3E  
+             0006E3 3235 355D  
+             0006E7 00         
+  849  849   0006E8 5741 5645   L215SINE: DC.B 'WAVE: 15SINE         NINT:     [1-->255]',$00
+             0006EC 3A20 3135  
+             0006F0 5349 4E45  
+             0006F4 2020 2020  
+             0006F8 2020 2020  
+             0006FC 204E 494E  
+             000700 543A 2020  
+             000704 2020 205B  
+             000708 312D 2D3E  
+             00070C 3235 355D  
+             000710 00         
+  850  850   000711 4D41 474E   LARGE:    DC.B 'MAGNITUDE TOO LARGE',$00
+             000715 4954 5544  
+             000719 4520 544F  
+             00071D 4F20 4C41  
+             000721 5247 4500  
+  851  851   000725 2020 494E   ZERO:     DC.B '  INVALID MAGNITUDE',$00
+             000729 5641 4C49  
+             00072D 4420 4D41  
+             000731 474E 4954  
+             000735 5544 4500  
+  852  852   000739 2020 4E4F   NADA:     DC.B '  NO DIGITS ENTERED',$00
+             00073D 2044 4947  
+             000741 4954 5320  
+             000745 454E 5445  
+             000749 5245 4400  
+  853  853   00074D 2020 2020   L2CLEAR:  DC.B '                                        ',$00 
+             000751 2020 2020  
+             000755 2020 2020  
+             000759 2020 2020  
+             00075D 2020 2020  
+             000761 2020 2020  
+             000765 2020 2020  
+             000769 2020 2020  
+             00076D 2020 2020  
+             000771 2020 2020  
+             000775 00         
+  854  854                      ;WAVEFORMS
+  855  855                      TRIANGLE: ;sets up data for TRIANGLE waveform
+  856  856   000776 03              DC.B  3                  ; number of segments for TRIANGLE 
+  857  857   000777 0800            DC.W  2048               ; initial DAC input value 
+  858  858   000779 32              DC.B  50                 ; length for segment_1 
+  859  859   00077A 001E            DC.W  30                 ; increment for segment_1 
+  860  860   00077C 64              DC.B  100                ; length for segment_2 
+  861  861   00077D FFE2            DC.W  -30                ; increment for segment_2 
+  862  862   00077F 32              DC.B  50                 ; length for segment_3 
+  863  863   000780 001E            DC.W  30                 ; increment for segment_3
+  864  864                      SQUARE:   ;sets up data for SQUARE waveform 
+  865  865   000782 04              DC.B  4                 ; number of segments for SQUARE 
+  866  866   000783 0CCC            DC.W  3276              ; initial DAC input value
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  867  867   000785 09              DC.B  9                 ; length for segment_1
+  868  868   000786 0000            DC.W  0                 ; increment for segment_1
+  869  869   000788 01              DC.B  1                 ; length for segment_2
+  870  870   000789 F334            DC.W  -3276             ; increment for segment_2
+  871  871   00078B 09              DC.B  9                 ; length for segment_3
+  872  872   00078C 0000            DC.W  0                 ; increment for segment_3
+  873  873   00078E 01              DC.B  1                 ; length for segment_4
+  874  874   00078F 0CCC            DC.W  3276              ; increment for segment_4
+  875  875                      SAW:      ;sets up data for SAW waveform
+  876  876   000791 02              DC.B  2                 ; number of segments for SAWTOOTH 
+  877  877   000792 0000            DC.W  0                 ; initial DAC input value
+  878  878   000794 13              DC.B  19                ; length for segment_1
+  879  879   000795 00AC            DC.W  172               ; increment for segment_1
+  880  880   000797 01              DC.B  1                 ; length for segment_2
+  881  881   000798 F33C            DC.W  -3268             ; increment for segment_2
+  882  882                      SINE7:    ;sets up data for 7SINE waveform 
+  883  883   00079A 07              DC.B  7                 ; number of segments for SINE-7 
+  884  884   00079B 0800            DC.W  2048              ; initial DAC input value 
+  885  885   00079D 19              DC.B  25                ; length for segment_1 
+  886  886   00079E 0020            DC.W  32                ; increment for segment_1 
+  887  887   0007A0 32              DC.B  50                ; length for segment_2 
+  888  888   0007A1 0010            DC.W  16                ; increment for segment_2 
+  889  889   0007A3 32              DC.B  50                ; length for segment_3 
+  890  890   0007A4 FFF0            DC.W  -16               ; increment for segment_3 
+  891  891   0007A6 32              DC.B  50                ; length for segment_4 
+  892  892   0007A7 FFE0            DC.W  -32               ; increment for segment_4 
+  893  893   0007A9 32              DC.B  50                ; length for segment_5 
+  894  894   0007AA FFF0            DC.W  -16               ; increment for segment_5 
+  895  895   0007AC 32              DC.B  50                ; length for segment_6 
+  896  896   0007AD 0010            DC.W  16                ; increment for segment_6 
+  897  897   0007AF 19              DC.B  25                ; length for segment_7 
+  898  898   0007B0 0020            DC.W  32                ; increment for segment_7
+  899  899                      SINE15:   ;sets up data for 15SINE waveform 
+  900  900   0007B2 0F              DC.B  15                 ; number of segments for SINE 
+  901  901   0007B3 0800            DC.W  2048               ; initial DAC input value 
+  902  902   0007B5 0A              DC.B  10                 ; length for segment_1 
+  903  903   0007B6 0029            DC.W  41                 ; increment for segment_1 
+  904  904   0007B8 15              DC.B  21                 ; length for segment_2 
+  905  905   0007B9 0025            DC.W  37                 ; increment for segment_2 
+  906  906   0007BB 15              DC.B  21                 ; length for segment_3 
+  907  907   0007BC 0019            DC.W  25                 ; increment for segment_3 
+  908  908   0007BE 15              DC.B  21                 ; length for segment_4 
+  909  909   0007BF 0009            DC.W  9                  ; increment for segment_4 
+  910  910   0007C1 15              DC.B  21                 ; length for segment_5 
+  911  911   0007C2 FFF7            DC.W  -9                 ; increment for segment_5 
+  912  912   0007C4 15              DC.B  21                 ; length for segment_6 
+  913  913   0007C5 FFE7            DC.W  -25                ; increment for segment_6 
+  914  914   0007C7 15              DC.B  21                 ; length for segment_7 
+  915  915   0007C8 FFDB            DC.W  -37                ; increment for segment_7 
+  916  916   0007CA 14              DC.B  20                 ; length for segment_8 
+  917  917   0007CB FFD7            DC.W  -41                ; increment for segment_8 
+  918  918   0007CD 15              DC.B  21                 ; length for segment_9 
+  919  919   0007CE FFDB            DC.W  -37                ; increment for segment_9 
+  920  920   0007D0 15              DC.B  21                 ; length for segment_10 
+  921  921   0007D1 FFE7            DC.W  -25                ; increment for segment_10 
+  922  922   0007D3 15              DC.B  21                 ; length for segment_11 
+  923  923   0007D4 FFF7            DC.W  -9                 ; increment for segment_11 
+  924  924   0007D6 15              DC.B  21                 ; length for segment_12 
+  925  925   0007D7 0009            DC.W  9                  ; increment for segment_12 
+  926  926   0007D9 15              DC.B  21                 ; length for segment_13 
+  927  927   0007DA 0019            DC.W  25                 ; increment for segment_13 
+  928  928   0007DC 15              DC.B  21                 ; length for segment_14 
+  929  929   0007DD 0025            DC.W  37                 ; increment for segment_14 
+  930  930   0007DF 0A              DC.B  10                 ; length for segment_15 
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  931  931   0007E0 0029            DC.W  41                 ; increment for segment_15 
+  932  932                        
+  933  933                      
+  934  934                      ;/------------------------------------------------------------------------------------\
+  935  935                      ;| Vectors                                                                            |
+  936  936                      ;\------------------------------------------------------------------------------------/
+  937  937                        ORG   $FFEE                      ;Timer channel 0 vector address
+  938  938  a00FFEE xxxx          DC.W  TC0ISR
+  939  939                        ORG   $FFFE                    ; reset vector address
+  940  940  a00FFFE xxxx          DC.W  Entry
+  941  941                        ORG   $FFCE                    ; Key Wakeup interrupt vector address [Port J]
+  942  942  a00FFCE xxxx          DC.W  ISR_KEYPAD
