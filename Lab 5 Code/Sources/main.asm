@@ -59,6 +59,7 @@ TC0H          EQU   $0050     ;sets location of TC0H
 DEFAULT_RAM:  SECTION
 
 ENCODER_COUNT   DS.W 1  ;stores a count for enocoder
+TEMP            DS.W      1
 ;/------------------------------------------------------------------------------------\
 ;|  Main Program Code                                                                 |
 ;\------------------------------------------------------------------------------------/
@@ -77,13 +78,34 @@ main:
   jsr ENABLE_MOTOR      ;enable motor operation
 
   TOP:
+    ;Good
+    ldd #$0000
+    jsr SATCHECK
+    bgnd
+    ;Overflow Positive (Return $0271)
+    ldd #$0272
+    jsr SATCHECK
+    bgnd
+    ;Overflow Negative (Return $FD8F)
+    ldd #$FD8E
+    jsr SATCHECK
+    bgnd
+    ;Negative (Return Value)
+    ldd #$FFF1
+    jsr SATCHECK
+    bgnd
+    ;Positive (Return Value)
+    ldd #$0005
+    jsr SATCHECK
+    bgnd
+
+    bra TOP               ;go back to TOP and loop through endlessly
+
 
     ldd #$0000 ; load accumulator D with 313
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
     jsr READ_ENCODER
     std ENCODER_COUNT
-    bra TOP               ;go back to TOP and loop through endlessly
-    
     
     ldd #$FEC7 ; load accumulator D with -313
     jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
@@ -92,13 +114,34 @@ main:
     ldd #$8000 ; load accumulator D with -32768
     jsr UPDATE_MOTOR ; brake the motor at 100% dut
     bgnd
-    
-    
-  
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
 ;\------------------------------------------------------------------------------------/
+SATCHECK:
+  pshx
+  pshc
+  cpd #$0000
+  bmi NEGATIVE
+  bgt POSITIVE
+  bra SATCHECK_exit
+  POSITIVE:
+    cpd #$0271
+    ble SATCHECK_exit
+    ldd #$0271
+    bra SATCHECK_exit
+  NEGATIVE:
+    cpd #$FD8F
+    bge SATCHECK_exit
+    ldd #$FD8F
+  SATCHECK_exit:
+    pulc 
+    pulx
+    rts
+
+
+
+
 DSATADD:
   pshx                ;pushes x to stack
   pshc                ;pushes c to stack
