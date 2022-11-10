@@ -101,6 +101,8 @@ main:
       clrw ERRORCOUNT
       clr KEY_BUF
   
+; ASSEMBLY IS SUPER GOOD
+
   TOP:
     jsr MASTERMIND        ;jumps to Mastermind task
     jsr KEYPAD            ;jumps to keypad task
