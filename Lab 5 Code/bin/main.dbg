@@ -59,6 +59,7 @@ TC0H          EQU   $0050     ;sets location of TC0H
 DEFAULT_RAM:  SECTION
 
 ENCODER_COUNT   DS.W 1  ;stores a count for enocoder
+TEMP            DS.W      1
 ;/------------------------------------------------------------------------------------\
 ;|  Main Program Code                                                                 |
 ;\------------------------------------------------------------------------------------/
@@ -76,30 +77,98 @@ main:
 
   jsr ENABLE_MOTOR      ;enable motor operation
 
-  TOP:
-
-    ldd #$0000 ; load accumulator D with 313
-    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
-    bra TOP               ;go back to TOP and loop through endlessly
-    
-    
-    ldd #$FEC7 ; load accumulator D with -313
-    jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
-    bgnd
-
-    ldd #$8000 ; load accumulator D with -32768
-    jsr UPDATE_MOTOR ; brake the motor at 100% dut
-    bgnd
-    
-    
+  jsr INITLCD
+  jsr LCDTEMPLATE       ;initializes the LCD
+  bgnd
   
+
+  TOP:
+    ;Good
+    ldd #$0000
+    jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2
+    bgnd
+    ;Overflow Positive (Return $0271)
+    ldd #$0272
+    jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
+    bgnd
+    ;Overflow Negative (Return $FD8F)
+    ldd #$FD8E
+    jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
+    bgnd
+    ;Negative (Return Value)
+    ldd #$FF00
+    jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
+    bgnd
+    ;Positive (Return Value)
+    ldd #$0010
+    jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
+    bgnd
+
+    bra TOP               ;go back to TOP and loop through endlessly
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
 ;\------------------------------------------------------------------------------------/
-   
+SATCHECK:
+  pshx
+  pshc
+  cpd #$0000
+  bmi NEGATIVE
+  bgt POSITIVE
+  bra SATCHECK_exit
+  POSITIVE:
+    cpd #$0271
+    ble SATCHECK_exit
+    ldd #$0271
+    bra SATCHECK_exit
+  NEGATIVE:
+    cpd #$FD8F
+    bge SATCHECK_exit
+    ldd #$FD8F
+  SATCHECK_exit:
+    pulc 
+    pulx
+    rts
+
+
+
+
+DSATADD:
+  pshx                ;pushes x to stack
+  pshc                ;pushes c to stack
+  sty TEMP            ;stores acc y value in TEMP
+  addd TEMP           ;adds acc D to TEMP
+  bvs DSATADD_OF    ;if Overflow is set then branch, otherwise just fall to exit
+  
+DSATADD_exit:
+  pulc                ;puls c from stack
+  pulx                ;puls x from stack
+  rts                 ;end subroutine
+
+DSATADD_OF:         ;tests overflow
+  cpy #$0000          ;compares TEMP with hex 0
+  bmi DSATADD_OFN          ;branches if value is negative
+  ldd #$7FFF          ;loads acc D with positive overflow
+  bra DSATADD_exit    ;goes to end subroutine
+
+DSATADD_OFN:        ;sets negative overflow
+  ldd #$8000          ;loads acc D with negative overflow
+  bra DSATADD_exit    ;goes to end subroutine  
 
 ;/------------------------------------------------------------------------------------\
 ;| ASCII Messages and Constant Data                                                   |

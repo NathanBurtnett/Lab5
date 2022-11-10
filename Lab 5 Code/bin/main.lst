@@ -65,62 +65,137 @@ Freescale HC12-Assembler
    59   59                      DEFAULT_RAM:  SECTION
    60   60                      
    61   61   000000             ENCODER_COUNT   DS.W 1  ;stores a count for enocoder
-   62   62                      ;/------------------------------------------------------------------------------------\
-   63   63                      ;|  Main Program Code                                                                 |
-   64   64                      ;\------------------------------------------------------------------------------------/
+   62   62   000002             TEMP            DS.W      1
+   63   63                      ;/------------------------------------------------------------------------------------\
+   64   64                      ;|  Main Program Code                                                                 |
 
 Freescale HC12-Assembler 
 (c) Copyright Freescale 1987-2010
 
  Abs. Rel.   Loc    Obj. code   Source line
  ---- ----   ------ ---------   -----------
-   65   65                      MyCode:       SECTION
-   66   66                      main:
-   67   67                        ;CLEAR VARIABLES 
-   68   68                      
-   69   69                        ;SETUP INSTRUCTIONS
-   70   70   000000 16xx xx       jsr STARTUP_ENCODER   ;initialize encoder
-   71   71   000003 16xx xx       jsr READ_ENCODER      ;returns encoder count in D
-   72   72   000006 7Cxx xx       std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
-   73   73                      
-   74   74   000009 16xx xx       jsr STARTUP_PWM       ;initialize PWM module
-   75   75   00000C 16xx xx       jsr STARTUP_MOTOR     ;initialize motor in disabled state
-   76   76                      
-   77   77   00000F 16xx xx       jsr ENABLE_MOTOR      ;enable motor operation
-   78   78                      
-   79   79                        TOP:
-   80   80                      
-   81   81   000012 CC00 00         ldd #$0000 ; load accumulator D with 313
-   82   82   000015 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-   83   83   000018 16xx xx         jsr READ_ENCODER
-   84   84   00001B 7Cxx xx         std ENCODER_COUNT
-   85   85   00001E 20F2            bra TOP               ;go back to TOP and loop through endlessly
-   86   86                          
-   87   87                          
-   88   88   000020 CCFE C7         ldd #$FEC7 ; load accumulator D with -313
-   89   89   000023 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
-   90   90   000026 00              bgnd
-   91   91                      
-   92   92   000027 CC80 00         ldd #$8000 ; load accumulator D with -32768
-   93   93   00002A 16xx xx         jsr UPDATE_MOTOR ; brake the motor at 100% dut
-   94   94   00002D 00              bgnd
-   95   95                          
-   96   96                          
-   97   97                        
-   98   98                      
-   99   99                      ;/------------------------------------------------------------------------------------\
-  100  100                      ;| Subroutines                                                                        |
-  101  101                      ;\------------------------------------------------------------------------------------/
-  102  102                         
-  103  103                      
-  104  104                      ;/------------------------------------------------------------------------------------\
-  105  105                      ;| ASCII Messages and Constant Data                                                   |
-  106  106                      ;\------------------------------------------------------------------------------------/
-  107  107                      
-  108  108                      ;/------------------------------------------------------------------------------------\
-  109  109                      ;| Vectors                                                                            |
-  110  110                      ;\------------------------------------------------------------------------------------/
-  111  111                        ORG   $FFFE                    ; reset vector address
-  112  112  a00FFFE xxxx          DC.W  Entry
-  113  113                        ORG   $FFCE                    ; Key Wakeup interrupt vector address [Port J]
-  114  114  a00FFCE xxxx          DC.W  ISR_KEYPAD
+   65   65                      ;\------------------------------------------------------------------------------------/
+   66   66                      MyCode:       SECTION
+   67   67                      main:
+   68   68                        ;CLEAR VARIABLES 
+   69   69                      
+   70   70                        ;SETUP INSTRUCTIONS
+   71   71   000000 16xx xx       jsr STARTUP_ENCODER   ;initialize encoder
+   72   72   000003 16xx xx       jsr READ_ENCODER      ;returns encoder count in D
+   73   73   000006 7Cxx xx       std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
+   74   74                      
+   75   75   000009 16xx xx       jsr STARTUP_PWM       ;initialize PWM module
+   76   76   00000C 16xx xx       jsr STARTUP_MOTOR     ;initialize motor in disabled state
+   77   77                      
+   78   78   00000F 16xx xx       jsr ENABLE_MOTOR      ;enable motor operation
+   79   79                      
+   80   80   000012 16xx xx       jsr INITLCD
+   81   81   000015 16xx xx       jsr LCDTEMPLATE       ;initializes the LCD
+   82   82   000018 00            bgnd
+   83   83                        
+   84   84                      
+   85   85                        TOP:
+   86   86                          ;Good
+   87   87   000019 CC00 00         ldd #$0000
+   88   88   00001C 16xx xx         jsr SATCHECK
+   89   89   00001F 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+   90   90   000022 16xx xx         jsr UPDATELCD_L1
+   91   91   000025 16xx xx         jsr UPDATELCD_L2
+   92   92   000028 00              bgnd
+   93   93                          ;Overflow Positive (Return $0271)
+   94   94   000029 CC02 72         ldd #$0272
+   95   95   00002C 16xx xx         jsr SATCHECK
+   96   96   00002F 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+   97   97   000032 16xx xx         jsr UPDATELCD_L1
+   98   98   000035 16xx xx         jsr UPDATELCD_L2  
+   99   99   000038 00              bgnd
+  100  100                          ;Overflow Negative (Return $FD8F)
+  101  101   000039 CCFD 8E         ldd #$FD8E
+  102  102   00003C 16xx xx         jsr SATCHECK
+  103  103   00003F 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+  104  104   000042 16xx xx         jsr UPDATELCD_L1
+  105  105   000045 16xx xx         jsr UPDATELCD_L2  
+  106  106   000048 00              bgnd
+  107  107                          ;Negative (Return Value)
+  108  108   000049 CCFF 00         ldd #$FF00
+  109  109   00004C 16xx xx         jsr SATCHECK
+  110  110   00004F 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+  111  111   000052 16xx xx         jsr UPDATELCD_L1
+  112  112   000055 16xx xx         jsr UPDATELCD_L2  
+  113  113   000058 00              bgnd
+  114  114                          ;Positive (Return Value)
+  115  115   000059 CC00 10         ldd #$0010
+  116  116   00005C 16xx xx         jsr SATCHECK
+  117  117   00005F 16xx xx         jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+  118  118   000062 16xx xx         jsr UPDATELCD_L1
+  119  119   000065 16xx xx         jsr UPDATELCD_L2  
+  120  120   000068 00              bgnd
+  121  121                      
+  122  122   000069 20AE            bra TOP               ;go back to TOP and loop through endlessly
+  123  123                      
+  124  124                      ;/------------------------------------------------------------------------------------\
+  125  125                      ;| Subroutines                                                                        |
+  126  126                      ;\------------------------------------------------------------------------------------/
+  127  127                      SATCHECK:
+  128  128   00006B 34            pshx
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  129  129   00006C 39            pshc
+  130  130   00006D 8C00 00       cpd #$0000
+  131  131   000070 2B0E          bmi NEGATIVE
+  132  132   000072 2E02          bgt POSITIVE
+  133  133   000074 2012          bra SATCHECK_exit
+  134  134                        POSITIVE:
+  135  135   000076 8C02 71         cpd #$0271
+  136  136   000079 2F0D            ble SATCHECK_exit
+  137  137   00007B CC02 71         ldd #$0271
+  138  138   00007E 2008            bra SATCHECK_exit
+  139  139                        NEGATIVE:
+  140  140   000080 8CFD 8F         cpd #$FD8F
+  141  141   000083 2C03            bge SATCHECK_exit
+  142  142   000085 CCFD 8F         ldd #$FD8F
+  143  143                        SATCHECK_exit:
+  144  144   000088 38              pulc 
+  145  145   000089 30              pulx
+  146  146   00008A 3D              rts
+  147  147                      
+  148  148                      
+  149  149                      
+  150  150                      
+  151  151                      DSATADD:
+  152  152   00008B 34            pshx                ;pushes x to stack
+  153  153   00008C 39            pshc                ;pushes c to stack
+  154  154   00008D 7Dxx xx       sty TEMP            ;stores acc y value in TEMP
+  155  155   000090 F3xx xx       addd TEMP           ;adds acc D to TEMP
+  156  156   000093 2903          bvs DSATADD_OF    ;if Overflow is set then branch, otherwise just fall to exit
+  157  157                        
+  158  158                      DSATADD_exit:
+  159  159   000095 38            pulc                ;puls c from stack
+  160  160   000096 30            pulx                ;puls x from stack
+  161  161   000097 3D            rts                 ;end subroutine
+  162  162                      
+  163  163                      DSATADD_OF:         ;tests overflow
+  164  164   000098 8D00 00       cpy #$0000          ;compares TEMP with hex 0
+  165  165   00009B 2B05          bmi DSATADD_OFN          ;branches if value is negative
+  166  166   00009D CC7F FF       ldd #$7FFF          ;loads acc D with positive overflow
+  167  167   0000A0 20F3          bra DSATADD_exit    ;goes to end subroutine
+  168  168                      
+  169  169                      DSATADD_OFN:        ;sets negative overflow
+  170  170   0000A2 CC80 00       ldd #$8000          ;loads acc D with negative overflow
+  171  171   0000A5 20EE          bra DSATADD_exit    ;goes to end subroutine  
+  172  172                      
+  173  173                      ;/------------------------------------------------------------------------------------\
+  174  174                      ;| ASCII Messages and Constant Data                                                   |
+  175  175                      ;\------------------------------------------------------------------------------------/
+  176  176                      
+  177  177                      ;/------------------------------------------------------------------------------------\
+  178  178                      ;| Vectors                                                                            |
+  179  179                      ;\------------------------------------------------------------------------------------/
+  180  180                        ORG   $FFFE                    ; reset vector address
+  181  181  a00FFFE xxxx          DC.W  Entry
+  182  182                        ORG   $FFCE                    ; Key Wakeup interrupt vector address [Port J]
+  183  183  a00FFCE xxxx          DC.W  ISR_KEYPAD

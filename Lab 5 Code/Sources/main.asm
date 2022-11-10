@@ -77,7 +77,9 @@ main:
 
   jsr ENABLE_MOTOR      ;enable motor operation
 
+  jsr INITLCD
   jsr LCDTEMPLATE       ;initializes the LCD
+  bgnd
   
 
   TOP:
