@@ -99,7 +99,27 @@ main:
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
 ;\------------------------------------------------------------------------------------/
-   
+DSATADD:
+  pshx                ;pushes x to stack
+  pshc                ;pushes c to stack
+  sty TEMP            ;stores acc y value in TEMP
+  addd TEMP           ;adds acc D to TEMP
+  bvs DSATADD_OF    ;if Overflow is set then branch, otherwise just fall to exit
+  
+DSATADD_exit:
+  pulc                ;puls c from stack
+  pulx                ;puls x from stack
+  rts                 ;end subroutine
+
+DSATADD_OF:         ;tests overflow
+  cpy #$0000          ;compares TEMP with hex 0
+  bmi DSATADD_OFN          ;branches if value is negative
+  ldd #$7FFF          ;loads acc D with positive overflow
+  bra DSATADD_exit    ;goes to end subroutine
+
+DSATADD_OFN:        ;sets negative overflow
+  ldd #$8000          ;loads acc D with negative overflow
+  bra DSATADD_exit    ;goes to end subroutine  
 
 ;/------------------------------------------------------------------------------------\
 ;| ASCII Messages and Constant Data                                                   |
