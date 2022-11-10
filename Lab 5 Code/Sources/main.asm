@@ -81,22 +81,37 @@ main:
     ;Good
     ldd #$0000
     jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
     bgnd
     ;Overflow Positive (Return $0271)
     ldd #$0272
     jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
     bgnd
     ;Overflow Negative (Return $FD8F)
     ldd #$FD8E
     jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
     bgnd
     ;Negative (Return Value)
-    ldd #$FFF1
+    ldd #$FF00
     jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
     bgnd
     ;Positive (Return Value)
-    ldd #$0005
+    ldd #$0010
     jsr SATCHECK
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    jsr READ_ENCODER
+    std ENCODER_COUNT
     bgnd
 
     bra TOP               ;go back to TOP and loop through endlessly
