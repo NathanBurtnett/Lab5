@@ -58,58 +58,38 @@ TC0H          EQU   $0050     ;sets location of TC0H
 ;\------------------------------------------------------------------------------------/
 DEFAULT_RAM:  SECTION
 
+ENCODER_COUNT   DS.W 1  ;stores a count for enocoder
 ;/------------------------------------------------------------------------------------\
 ;|  Main Program Code                                                                 |
 ;\------------------------------------------------------------------------------------/
 MyCode:       SECTION
 main:
-  ;---CLEAR VARIABLES---
-    ;clear waveform variables
-      clr NINT
-      clr CINT
-      clrw WAVEPTR
-      clrw SEGPTR
-      clr LSEG
-      clr CSEG
-      clr VALUE
-      clr NEWBTI
-      clr SEGINC
-    ;clear state variables
-      clr MMSTATE
-      clr KPSTATE
-      clr DPSTATE
-      clr TCSTATE
-      clr FGSTATE
-      clr PRSTATE
-    ;clear ITCVs  
-      clr MODE
-      clr PREQ
-      clr ERROR
-      clr SPLASH
-      clr DPTR
-      clr DECHO
-      clr DBS
-      clr DWAVE
-      clr DWLINE
-      clr NEWWAVE
-      clr L2CURSOR
-    ;clear message variables
-      clr COUNT
-      clr DPe1p
-      clr DPe2p
-      clr DPe3p
-      clrw ERRORCOUNT
-      clr KEY_BUF
-  
-; ASSEMBLY IS SUPER GOOD
+  ;CLEAR VARIABLES 
+
+  ;SETUP INSTRUCTIONS
+  jsr STARTUP_ENCODER   ;initialize encoder
+  jsr READ_ENCODER      ;returns encoder count in D
+  std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
+
+  jsr STARTUP_PWM       ;initialize PWM module
+  jsr STARTUP_MOTOR     ;initialize motor in disabled state
+
+  jsr ENABLE_MOTOR      ;enable motor operation
 
   TOP:
-    jsr MASTERMIND        ;jumps to Mastermind task
-    jsr KEYPAD            ;jumps to keypad task
-    jsr DISPLAY           ;jumps to display task
-    jsr TC0               ;jumps to timer channel 0 task
-    jsr FUNCTIONGENERATOR ;jumps to function generator 0 task
-    jsr PRINTREQUEST      ;jumps to print requesting 
+    bgnd
+    ldd #$0139 ; load accumulator D with 313
+    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
+    bgnd
+
+    ldd #$FEC7 ; load accumulator D with -313
+    jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
+    bgnd
+
+    ldd #$8000 ; load accumulator D with -32768
+    jsr UPDATE_MOTOR ; brake the motor at 100% dut
+    bgnd
+    
     bra TOP               ;go back to TOP and loop through endlessly
   
 
