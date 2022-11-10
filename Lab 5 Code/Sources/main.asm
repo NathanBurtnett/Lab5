@@ -77,58 +77,47 @@ main:
 
   jsr ENABLE_MOTOR      ;enable motor operation
 
+  jsr LCDTEMPLATE       ;initializes the LCD
+  
+
   TOP:
     ;Good
     ldd #$0000
     jsr SATCHECK
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2
     bgnd
     ;Overflow Positive (Return $0271)
     ldd #$0272
     jsr SATCHECK
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
     bgnd
     ;Overflow Negative (Return $FD8F)
     ldd #$FD8E
     jsr SATCHECK
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
     bgnd
     ;Negative (Return Value)
     ldd #$FF00
     jsr SATCHECK
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
     bgnd
     ;Positive (Return Value)
     ldd #$0010
     jsr SATCHECK
     jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
+    jsr UPDATELCD_L1
+    jsr UPDATELCD_L2  
     bgnd
 
     bra TOP               ;go back to TOP and loop through endlessly
-
-
-    ldd #$0000 ; load accumulator D with 313
-    jsr UPDATE_MOTOR ; actuate the motor at 50% duty cycle
-    jsr READ_ENCODER
-    std ENCODER_COUNT
-    
-    ldd #$FEC7 ; load accumulator D with -313
-    jsr UPDATE_MOTOR ; actuate the motor at -50% duty cycle
-    bgnd
-
-    ldd #$8000 ; load accumulator D with -32768
-    jsr UPDATE_MOTOR ; brake the motor at 100% dut
-    bgnd
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
