@@ -53,6 +53,7 @@ C0F           EQU   %00000001          ; timer channel 0 output compare bit
 PORTT         EQU   $0240              ; PORTT pin 8 to be used for interrupt timing
 LOWER_LIM     EQU   -625               ; number for max reverse duty cycle
 UPPER_LIM     EQU   625                ; number for max forward duty cycle
+INTERVAL      EQU   $4E20              ; number of clock pulses that equal 2ms from 10.2MHz clock
 
 ;/------------------------------------------------------------------------------------\
 ;| Variables in RAM                                                                   |
@@ -135,7 +136,7 @@ TC0ISR:
     olcl:  
         ldd   V_ref 
         tst   CL
-        bne   clerr:
+        bne   clerr
         olerr:
             std   ERR
             bra   kpcalc
@@ -198,7 +199,7 @@ TC0ISR:
         jsr  OUTDACA
 
         rti
-        
+
     ;uctest:
         ;ldd UPDATE_COUNT
         ;cpd #$01F4
