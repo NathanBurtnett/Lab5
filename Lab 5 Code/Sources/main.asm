@@ -16,6 +16,17 @@
 ;| External Definitions                                                               |
 ;\------------------------------------------------------------------------------------/
               XDEF  main
+
+              XDEF  RUN:        DS.B 1      ;Boolean indicating controller is running
+              XDEF  CL:         DS.B 1      ;Boolean for closed-loop active
+
+              XDEF  v_ref:      DS.W 1      ;reference velocity
+              XDEF  Theta_OLD   DS.W 1      ;previous encoder reading
+              XDEF  KP:         DS.W 1      ;proportional gain [1024*KP]
+              XDEF  KI:         DS.W 1      ;integral gain [1024*KI]
+
+              XDEF  UPDATE_FLG1 DS.B 1      ;Boolean for display update for line one
+
 ;/------------------------------------------------------------------------------------\
 ;| External References                                                                |
 ;\------------------------------------------------------------------------------------/
@@ -30,6 +41,12 @@
               XREF  LCDTEMPLATE, UPDATELCD_L1, UPDATELCD_L2
               XREF  LVREF_BUF, LVACT_BUF, LERR_BUF,LEFF_BUF, LKP_BUF, LKI_BUF
               XREF  Entry, ISR_KEYPAD
+
+              XREF  Vact_DISP:  DS.W 1        ;actual velocity display value
+              XREF  ERR_DSIP:   DS.W 1        ;error display value
+              XREF  EFF_DISP:   DS.W 1        ;effort display value
+
+              XREF  FREDENTRY:  DS.W 1        ;LAB 5 INTERFACE subroutine
             
 ;/------------------------------------------------------------------------------------\
 ;| Assembler Equates                                                                  |
@@ -53,6 +70,7 @@ TSCR1         EQU   $0046     ;sets location of TSCR1
 TEN_TSFRZ_SET EQU   %10100000 ;sets value TEN_TSFRZ_SET which will go into TSCR1
 TCNT          EQU   $0044     ;sets location of TCNT
 TC0H          EQU   $0050     ;sets location of TC0H
+
 ;/------------------------------------------------------------------------------------\
 ;| Variables in RAM                                                                   |
 ;\------------------------------------------------------------------------------------/
@@ -66,6 +84,10 @@ TEMP            DS.W      1
 MyCode:       SECTION
 main:
   ;CLEAR VARIABLES 
+  clr LVREF_BUF
+  clr LVACT_BUF
+  clr LVACT_BUF
+  clr 
 
   ;SETUP INSTRUCTIONS
   jsr STARTUP_ENCODER   ;initialize encoder
@@ -121,54 +143,39 @@ main:
 
     bra TOP               ;go back to TOP and loop through endlessly
 
+    jsr FREDENTRY         ;
+    spin: bra TOP
+
+;||||||||||||||||||||||||||||||||||ISR|||||||||||||||||||||||||||||||||||||||||||||||||
+ TC0ISR:
+  bset PORTT, $80           ;turn on PORTT pin 8 to begin ISR timing
+
+  inc UPDATE_COUNT          ;unless UPDATE_COUNT = 0, skip saving
+  bne measurements          ; display variables
+  movw V_act, V_act_DISP    ;take a snapshot of variables to enable
+  movw ERR, ERR_DSIP        ; consistent display
+  movw EFF, EFF_DISP
+  movb #$01, UPDATE_FLG1    ;set UPDATEFLG1 when appropriate
+
+  measurements:
+    ;read encoder value
+    jsr   READ_ENCODER          ;read encoder position
+    std   Theta_NEW             ;store it
+    ;compute 2-point difference to get speed
+    subd  Theta_OLD             ;compute displacement since last reading
+    std   V_act                 ;store displacement as actual speed
+    movw  Theta_NEW, Theta_OLD  ;move current raeading to previous reading
+
+  ;CALCULATE VACT
+    ;VACT = (THETANEW-THETAOLD)/(1BTI)
+  ;CALCULATE ERROR (VREF-VACT)
+  ;CALCULATE CONTROLER EFFORT
+  ;CALCULATE PWM INPUT
+
+
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
 ;\------------------------------------------------------------------------------------/
-SATCHECK:
-  pshx
-  pshc
-  cpd #$0000
-  bmi NEGATIVE
-  bgt POSITIVE
-  bra SATCHECK_exit
-  POSITIVE:
-    cpd #$0271
-    ble SATCHECK_exit
-    ldd #$0271
-    bra SATCHECK_exit
-  NEGATIVE:
-    cpd #$FD8F
-    bge SATCHECK_exit
-    ldd #$FD8F
-  SATCHECK_exit:
-    pulc 
-    pulx
-    rts
-
-
-
-
-DSATADD:
-  pshx                ;pushes x to stack
-  pshc                ;pushes c to stack
-  sty TEMP            ;stores acc y value in TEMP
-  addd TEMP           ;adds acc D to TEMP
-  bvs DSATADD_OF    ;if Overflow is set then branch, otherwise just fall to exit
-  
-DSATADD_exit:
-  pulc                ;puls c from stack
-  pulx                ;puls x from stack
-  rts                 ;end subroutine
-
-DSATADD_OF:         ;tests overflow
-  cpy #$0000          ;compares TEMP with hex 0
-  bmi DSATADD_OFN          ;branches if value is negative
-  ldd #$7FFF          ;loads acc D with positive overflow
-  bra DSATADD_exit    ;goes to end subroutine
-
-DSATADD_OFN:        ;sets negative overflow
-  ldd #$8000          ;loads acc D with negative overflow
-  bra DSATADD_exit    ;goes to end subroutine  
 
 ;/------------------------------------------------------------------------------------\
 ;| ASCII Messages and Constant Data                                                   |
