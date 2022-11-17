@@ -102,10 +102,8 @@ main:
     clrw LVREF_BUF
     clrw LVACT_BUF
     clrw LVACT_BUF
-
     clr RUN
     clr CL
-
     clrw V_act
     clrw V_ref
     clrw Theta_NEW
@@ -115,40 +113,17 @@ main:
     clrw KPRES
     clrw KI 
     clrw KPRES
-
     clrw ESUM
     clrw ERROR
     clrw APRE
     clrw ASTAR
-    
-
-
     clrw EFF
     clr UPDATE_FLG1
     clrw UPDATE_COUNT
-
-    ;SETUP INSTRUCTIONS
-    jsr STARTUP_ENCODER   ;initialize encoder
-    jsr READ_ENCODER      ;returns encoder count in D
-    std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
-
-    jsr STARTUP_PWM       ;initialize PWM module
-    jsr STARTUP_MOTOR     ;initialize motor in disabled state
-
-    jsr ENABLE_MOTOR      ;enable motor operation
-
-    jsr INITLCD
-    jsr LCDTEMPLATE       ;initializes the LCD
     bgnd
+    jsr FREDENTRY
+    spin:   bra   spin                     ; endless horizontal loop
   
-
-  TOP:
-    jsr TC0ISR
-    jsr FREDENTRY        
-    bra TOP
-
-
-
 ;||||||||||||||||||||||||||||||||||ISR|||||||||||||||||||||||||||||||||||||||||||||||||
 TC0ISR:
   bset PORTT, $80           ;turn on PORTT pin 8 to begin ISR timing
@@ -208,7 +183,7 @@ TC0ISR:
     uctest:
         ldd UPDATE_COUNT
         cpd #$01F4
-        beq ucexit:
+        beq ucexit
         rti
 
         ucexit:
