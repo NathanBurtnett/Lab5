@@ -71,7 +71,7 @@ KPRES:        DS.W  1                  ; proportional gain result
 KI:           DS.W  1                  ; integral gain
 KIRES:        DS.W  1                  ; intergral gain result
 
-A             DS.W  1                  ; pi controller output
+APRE          DS.W  1                  ; pi controller output
 ASTAR         DS.W  1                  ; saturation checked pi controller output
 
 ERROR:        DS.W  1                  ; the current error of the system
@@ -93,7 +93,20 @@ main:
   clr LVREF_BUF
   clr LVACT_BUF
   clr LVACT_BUF
-  clr 
+  clr ESUM
+  clr ERROR
+  clr APRE
+  clr ASTAR
+  clr KP 
+  clr KPRES
+  clr KI 
+  clr KPRES
+  clr V_ref
+  clr RUN
+  clr CL
+  clr EFF
+  clr UPDATE_FLG1
+  clr UPDATE_COUNT
 
   ;SETUP INSTRUCTIONS
   jsr STARTUP_ENCODER   ;initialize encoder
@@ -162,7 +175,7 @@ TC0ISR:
     ldd KPRES
     ldy KIRES
     jsr DSATADD
-    std A
+    std APRE
     ;satcheck
     jsr SATCHECK
     std ASTAR
