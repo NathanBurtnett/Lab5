@@ -152,7 +152,7 @@ main:
 ;||||||||||||||||||||||||||||||||||ISR|||||||||||||||||||||||||||||||||||||||||||||||||
 TC0ISR:
   bset PORTT, $80           ;turn on PORTT pin 8 to begin ISR timing
-
+  
   inc UPDATE_COUNT          ;unless UPDATE_COUNT = 0, skip saving
   bne measurements          ; display variables
   movw V_act, V_act_DISP    ;take a snapshot of variables to enable
@@ -160,61 +160,60 @@ TC0ISR:
   movw EFF, EFF_DISP
   movb #$01, UPDATE_FLG1    ;set UPDATEFLG1 when appropriate
 
-  measurements:
-    ;read encoder value
-    jsr   READ_ENCODER          ;read encoder position
-    std   Theta_NEW             ;store it
-    ;compute 2-point difference to get speed
-    subd  Theta_OLD             ;compute displacement since last reading
-    std   V_act                 ;store displacement as actual speed
-    movw  Theta_NEW, Theta_OLD  ;move current raeading to previous reading
+    measurements:
+        ;read encoder value
+        jsr   READ_ENCODER          ;read encoder position
+        std   Theta_NEW             ;store it
+        ;compute 2-point difference to get speed
+        subd  Theta_OLD             ;compute displacement since last reading
+        std   V_act                 ;store displacement as actual speed
+        movw  Theta_NEW, Theta_OLD  ;move current raeading to previous reading
+    errorcalc:  ; compute error
+        ldd   V_ref
+        subd  V_act
+        std   ERROR
+        ldy   ESUM
+        jsr   DSATADD
+        std   ESUM
+    kicalc:     ;compute Ki
+        ldy KI
+        emul 
+        ldx #$0400
+        idiv 
+        stx KIRES
+    kpcalc:     ;compute Kp
+        ldd ERROR
+        ldy KP
+        emul 
+        ldx #$0400
+        idiv 
+        stx KPRES
+    pisum:     ;add Kp and Ki
+        ldd KPRES
+        ldy KIRES
+        jsr DSATADD
+        std APRE
+    pisatcheck:    ;satcheck
+        jsr SATCHECK
+        std ASTAR
+    effcalc:    ;calculate effort
+        ldy #$0271
+        emul
+        ldx #$0064
+        idiv
+        stx EFF
+    motorset:   ;set motor speed
+        ldd ASTAR
+        jsr UPDATE_MOTOR
+    uctest:
+        ldd UPDATE_COUNT
+        cpd #$01F4
+        beq ucexit:
+        rti
 
-
-    ;compute the error
-    ldd   V_ref
-    subd  V_act
-    std   ERROR
-    ldy   ESUM
-    jsr   DSATADD
-    std   ESUM
-    ;compute Ki
-    ldy KI
-    emul 
-    ldx #$0400
-    idiv 
-    stx KIRES
-    ;compute Kp
-    ldd ERROR
-    ldy KP
-    emul 
-    ldx #$0400
-    idiv 
-    stx KPRES
-    ;add Kp and Ki
-    ldd KPRES
-    ldy KIRES
-    jsr DSATADD
-    std APRE
-    ;satcheck
-    jsr SATCHECK
-    std ASTAR
-    ;calculate effort
-    ldy #$0271
-    emul
-    ldx #$0064
-    idiv
-    stx EFF
-    ;set motor speed
-    ldd ASTAR
-    jsr UPDATE_MOTOR
-    
-    
-    
-  ;CALCULATE VACT
-    ;VACT = (THETANEW-THETAOLD)/(1BTI)
-  ;CALCULATE ERROR (VREF-VACT)
-  ;CALCULATE CONTROLER EFFORT
-  ;CALCULATE PWM INPUT
+        ucexit:
+            clr UPDATE_COUNT
+            rti
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
@@ -278,6 +277,5 @@ DSATADD:
   DC.W  TC0ISR
   ORG   $FFFE                       ; reset vector address
   DC.W  Entry
-  ORG   $FFCE                       ; Key Wakeup interrupt vector address [Port J]
-  DC.W  ISR_KEYPAD
+
 
