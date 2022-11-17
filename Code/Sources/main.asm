@@ -111,11 +111,9 @@ main:
   
 
   TOP:
-
-    bra TOP               ;go back to TOP and loop through endlessly
-
-    jsr FREDENTRY         ;
-    spin: bra TOP
+    jsr TC0ISR
+    jsr FREDENTRY        
+    bra TOP
 
 
 
@@ -139,7 +137,6 @@ TC0ISR:
     std   V_act                 ;store displacement as actual speed
     movw  Theta_NEW, Theta_OLD  ;move current raeading to previous reading
 
-    ;calculate Vact
 
     ;compute the error
     ldd   V_ref
