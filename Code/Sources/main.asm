@@ -274,6 +274,10 @@ DSATADD:
 ;| Vectors                                                                            |
 ;\------------------------------------------------------------------------------------/
 ; Add interrupt and reset vectors here
-         ORG  $FFFE                    ; reset vector address
-         DC.W Entry
+  ORG   $FFEE                       ;Timer channel 0 vector address
+  DC.W  TC0ISR
+  ORG   $FFFE                       ; reset vector address
+  DC.W  Entry
+  ORG   $FFCE                       ; Key Wakeup interrupt vector address [Port J]
+  DC.W  ISR_KEYPAD
 
