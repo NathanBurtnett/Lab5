@@ -64,8 +64,11 @@ DEFAULT_RAM:  SECTION
 RUN:          DS.B  1                  ; Boolean indicating controller is running
 CL:           DS.B  1                  ; Boolean for closed-loop active
 
+V_act:        DS.W  1
 V_ref:        DS.W  1                  ; reference velocity
 Theta_OLD:    DS.W  1                  ; previous encoder reading
+Theta_NEW:    DS.W  1                  ;
+ENCODER_COUNT: DS.W  1                  ; encoder cound
 KP:           DS.W  1                  ; proportional gain
 KPRES:        DS.W  1                  ; proportional gain result
 KI:           DS.W  1                  ; integral gain
@@ -79,6 +82,12 @@ ESUM:         DS.W  1                  ; reiman sum of errors
 
 EFF:          DS.W  1                  ; current effort of motor
 
+ERR:          DS.W  1
+TEMP:         DS.W  1
+UPDATE_COUNT: DS.W  1
+
+
+
 UPDATE_FLG1   DS.B  1                  ; Boolean for display update for line one
 
 
@@ -90,37 +99,47 @@ UPDATE_FLG1   DS.B  1                  ; Boolean for display update for line one
 MyCode:       SECTION
 main:   
 ;CLEAR VARIABLES 
-  clr LVREF_BUF
-  clr LVACT_BUF
-  clr LVACT_BUF
-  clr ESUM
-  clr ERROR
-  clr APRE
-  clr ASTAR
-  clr KP 
-  clr KPRES
-  clr KI 
-  clr KPRES
-  clr V_ref
-  clr RUN
-  clr CL
-  clr EFF
-  clr UPDATE_FLG1
-  clr UPDATE_COUNT
+    clrw LVREF_BUF
+    clrw LVACT_BUF
+    clrw LVACT_BUF
 
-  ;SETUP INSTRUCTIONS
-  jsr STARTUP_ENCODER   ;initialize encoder
-  jsr READ_ENCODER      ;returns encoder count in D
-  std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
+    clr RUN
+    clr CL
 
-  jsr STARTUP_PWM       ;initialize PWM module
-  jsr STARTUP_MOTOR     ;initialize motor in disabled state
+    clrw V_act
+    clrw V_ref
+    clrw Theta_NEW
+    clrw Theta_OLD
+    clrw ENCODER_COUNT
+    clwr KP 
+    clrw KPRES
+    clrw KI 
+    clrw KPRES
 
-  jsr ENABLE_MOTOR      ;enable motor operation
+    clrw ESUM
+    clrw ERROR
+    clrw APRE
+    clrw ASTAR
+    
 
-  jsr INITLCD
-  jsr LCDTEMPLATE       ;initializes the LCD
-  bgnd
+
+    clrw EFF
+    clr UPDATE_FLG1
+    clrw UPDATE_COUNT
+
+    ;SETUP INSTRUCTIONS
+    jsr STARTUP_ENCODER   ;initialize encoder
+    jsr READ_ENCODER      ;returns encoder count in D
+    std ENCODER_COUNT     ;store the count in a 16-bit variable in RAM
+
+    jsr STARTUP_PWM       ;initialize PWM module
+    jsr STARTUP_MOTOR     ;initialize motor in disabled state
+
+    jsr ENABLE_MOTOR      ;enable motor operation
+
+    jsr INITLCD
+    jsr LCDTEMPLATE       ;initializes the LCD
+    bgnd
   
 
   TOP:
