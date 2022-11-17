@@ -67,27 +67,19 @@ CL:           DS.B  1                  ; Boolean for closed-loop active
 V_act:        DS.W  1
 V_ref:        DS.W  1                  ; reference velocity
 Theta_OLD:    DS.W  1                  ; previous encoder reading
-Theta_NEW:    DS.W  1                  ;
-ENCODER_COUNT: DS.W  1                  ; encoder cound
+Theta_NEW:    DS.W  1                  
 KP:           DS.W  1                  ; proportional gain
 KPRES:        DS.W  1                  ; proportional gain result
 KI:           DS.W  1                  ; integral gain
 KIRES:        DS.W  1                  ; intergral gain result
-
 APRE          DS.W  1                  ; pi controller output
 ASTAR         DS.W  1                  ; saturation checked pi controller output
-
 ERROR:        DS.W  1                  ; the current error of the system
 ESUM:         DS.W  1                  ; reiman sum of errors
-
 EFF:          DS.W  1                  ; current effort of motor
-
 ERR:          DS.W  1
 TEMP:         DS.W  1
-UPDATE_COUNT: DS.W  1
-
-
-
+UPDATE_COUNT: DS.B  1
 UPDATE_FLG1   DS.B  1                  ; Boolean for display update for line one
 
 
@@ -99,32 +91,28 @@ UPDATE_FLG1   DS.B  1                  ; Boolean for display update for line one
 MyCode:       SECTION
 main:   
 ;CLEAR VARIABLES 
-    clrw LVREF_BUF
-    clrw LVACT_BUF
-    clrw LVACT_BUF
     clr RUN
     clr CL
+    clr UPDATE_FLG1
+    clr UPDATE_COUNT
+
     clrw V_act
     clrw V_ref
     clrw Theta_NEW
     clrw Theta_OLD
-    clrw ENCODER_COUNT
     clrw KP 
     clrw KPRES
     clrw KI 
     clrw KPRES
     clrw ESUM
-    clrw ERROR
+    clrw ERR
+    clrw EFF
     clrw APRE
     clrw ASTAR
-    clrw EFF
-    clr UPDATE_FLG1
-    clrw UPDATE_COUNT
     bgnd
     jsr FREDENTRY
     spin:   bra   spin                     ; endless horizontal loop
   
-;||||||||||||||||||||||||||||||||||ISR|||||||||||||||||||||||||||||||||||||||||||||||||
 TC0ISR:
   bset PORTT, $80           ;turn on PORTT pin 8 to begin ISR timing
   
@@ -143,26 +131,35 @@ TC0ISR:
         subd  Theta_OLD             ;compute displacement since last reading
         std   V_act                 ;store displacement as actual speed
         movw  Theta_NEW, Theta_OLD  ;move current raeading to previous reading
-    errorcalc:  ; compute error
-        ldd   V_ref
-        subd  V_act
-        std   ERROR
+
+    olcl:  
+        ldd   V_ref 
+        tst   CL
+        bne   clerr:
+        olerr:
+            std   ERR
+            bra   kpcalc
+        clerr:
+            subd  V_act
+            std   ERR
+    kpcalc:     ;compute proportional control
+        ldd ERR
+        ldy KP
+        emuls
+        ldx #$0400
+        edivs
+        sty KPRES
+    kicalc:     ;compute integral control
         ldy   ESUM
+        ldd   ERR
         jsr   DSATADD
         std   ESUM
-    kicalc:     ;compute Ki
         ldy KI
-        emul 
+        emuls 
         ldx #$0400
-        idiv 
-        stx KIRES
-    kpcalc:     ;compute Kp
-        ldd ERROR
-        ldy KP
-        emul 
-        ldx #$0400
-        idiv 
-        stx KPRES
+        edivs
+        sty KIRES
+  
     pisum:     ;add Kp and Ki
         ldd KPRES
         ldy KIRES
@@ -173,22 +170,44 @@ TC0ISR:
         std ASTAR
     effcalc:    ;calculate effort
         ldy #$0271
-        emul
+        emuls
         ldx #$0064
-        idiv
-        stx EFF
-    motorset:   ;set motor speed
+        edivs
+        sty EFF
+    runtst:
+        tst RUN
+        beq motoroff 
         ldd ASTAR
+        bra motorset
+    motoroff:
+        ldd #$0000
+        clrw ESUM
+        clrw ERR
+    motorset:   ;set motor speed
         jsr UPDATE_MOTOR
-    uctest:
-        ldd UPDATE_COUNT
-        cpd #$01F4
-        beq ucexit
-        rti
+        ldd TC0
+        addd #INTERVAL
+        std TC0
+        bset TFLG1, C0F
 
-        ucexit:
-            clr UPDATE_COUNT
-            rti
+    measureout:
+        ldd V_act
+        ldy #13
+        emuls
+        addd #2048
+        jsr  OUTDACA
+
+        rti
+        
+    ;uctest:
+        ;ldd UPDATE_COUNT
+        ;cpd #$01F4
+        ;beq ucexit
+        ;rti
+
+        ;ucexit:
+            ;clr UPDATE_COUNT
+            ;rti
 
 ;/------------------------------------------------------------------------------------\
 ;| Subroutines                                                                        |
