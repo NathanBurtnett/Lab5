@@ -111,7 +111,7 @@ main:
     clrw Theta_NEW
     clrw Theta_OLD
     clrw ENCODER_COUNT
-    clwr KP 
+    clrw KP 
     clrw KPRES
     clrw KI 
     clrw KPRES
@@ -156,7 +156,7 @@ TC0ISR:
   inc UPDATE_COUNT          ;unless UPDATE_COUNT = 0, skip saving
   bne measurements          ; display variables
   movw V_act, V_act_DISP    ;take a snapshot of variables to enable
-  movw ERR, ERR_DSIP        ; consistent display
+  movw ERR, ERR_DISP        ; consistent display
   movw EFF, EFF_DISP
   movb #$01, UPDATE_FLG1    ;set UPDATEFLG1 when appropriate
 
