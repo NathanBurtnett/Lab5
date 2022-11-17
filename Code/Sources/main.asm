@@ -170,9 +170,9 @@ TC0ISR:
         jsr SATCHECK
         std ASTAR
     effcalc:    ;calculate effort
-        ldy #$0271
+        ldy #$0064
         emuls
-        ldx #$0064
+        ldx #$0271
         edivs
         sty EFF
     runtst:
